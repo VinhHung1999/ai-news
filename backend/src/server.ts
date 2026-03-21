@@ -305,7 +305,19 @@ app.get('/api/bookmarks', async (_req: Request, res: Response) => {
   }
 });
 
+// Cron: collect daily at 5AM
+import cron from 'node-cron';
+cron.schedule('0 5 * * *', async () => {
+  console.log(`[cron] Scheduled run at ${new Date().toISOString()}`);
+  try {
+    await runAllCollectors();
+  } catch (err) {
+    console.error('[cron] Scheduled collection error:', err);
+  }
+});
+
 const PORT = 3342;
 app.listen(PORT, () => {
   console.log(`[root@ai.news:~#] Backend server active on http://localhost:${PORT}`);
+  console.log(`[cron] Scheduler active. Next run: 5:00 AM daily.`);
 });
