@@ -2,6 +2,7 @@ import { collectGitHub } from '../collectors/github';
 import { collectAnthropic } from '../collectors/anthropic';
 import { collectGoogleAI } from '../collectors/google-ai';
 import { collectHackerNews } from '../collectors/hackernews';
+import { collectStarHistory } from '../collectors/star-history';
 import { insertMany, markTopPicks } from '../db/database';
 import type { Article } from '../types';
 
@@ -10,6 +11,7 @@ const collectors = [
   { name: 'Anthropic', fn: collectAnthropic },
   { name: 'Google AI', fn: collectGoogleAI },
   { name: 'Hacker News', fn: collectHackerNews },
+  { name: 'Star History', fn: collectStarHistory },
 ];
 
 export async function runAllCollectors() {

@@ -98,7 +98,7 @@ app.post('/api/news/collect', requireApiKey, async (_req: Request, res: Response
     console.log('[api] Manual collection triggered');
     const results = await runAllCollectors();
     const summary = results.map((r, i) => ({
-      source: ['GitHub', 'Anthropic', 'Google AI', 'Hacker News'][i],
+      source: ['GitHub', 'Anthropic', 'Google AI', 'Hacker News', 'Star History'][i],
       status: r.status,
       ...(r.status === 'fulfilled' ? r.value : { error: (r as PromiseRejectedResult).reason?.message }),
     }));
