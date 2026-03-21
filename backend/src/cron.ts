@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config({ override: true });
 import cron from 'node-cron';
 import { runAllCollectors } from './services/collector-runner';
 import { closePool } from './db/database';
