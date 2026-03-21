@@ -4,7 +4,7 @@ import type { Article, ArticleRow } from '../types';
 const pool = new pg.Pool({
   database: 'ai_news',
   host: 'localhost',
-  port: 5432,
+  port: Number(process.env.DB_PORT) || 5432,
 });
 
 export async function insertMany(articles: Article[]): Promise<number> {
