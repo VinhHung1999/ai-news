@@ -1,7 +1,11 @@
-import { MessageSquare, ArrowUp, BookmarkPlus } from 'lucide-react';
+import { apiFetch } from '../api';
+import { useState } from 'react';
+import { MessageSquare, ArrowUp, BookmarkPlus, BookmarkCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+
 interface NewsCardProps {
+  id: number;
   title: string;
   source: string;
   time: string;
@@ -11,12 +15,28 @@ interface NewsCardProps {
   image?: string;
   gradient?: string;
   delay?: number;
+  bookmarked?: boolean;
   onClick?: () => void;
 }
 
-const NewsCard = ({ title, source, time, tags, upvotes, comments, image, gradient, delay = 0, onClick }: NewsCardProps) => {
+const NewsCard = ({ id, title, source, time, tags, upvotes, comments, image, gradient, delay = 0, bookmarked: initialBookmarked, onClick }: NewsCardProps) => {
+  const [bookmarked, setBookmarked] = useState(!!initialBookmarked);
+
+  const handleBookmark = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const res = await apiFetch(`/api/articles/${id}/bookmark`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setBookmarked(data.bookmarked);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
-    <motion.div 
+    <motion.div
       className="news-card"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -44,7 +64,9 @@ const NewsCard = ({ title, source, time, tags, upvotes, comments, image, gradien
           <button className="action-btn" onClick={(e) => e.stopPropagation()}><ArrowUp size={14} /> {upvotes}</button>
           <button className="action-btn" onClick={(e) => e.stopPropagation()}><MessageSquare size={14} /> {comments}</button>
         </div>
-        <button className="action-btn" onClick={(e) => e.stopPropagation()}><BookmarkPlus size={16} /></button>
+        <button className={`action-btn ${bookmarked ? 'bookmarked' : ''}`} onClick={handleBookmark}>
+          {bookmarked ? <BookmarkCheck size={16} /> : <BookmarkPlus size={16} />}
+        </button>
       </div>
     </motion.div>
   );

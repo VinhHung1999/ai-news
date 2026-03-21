@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 320px;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #000;
+      color: #e0e0e0;
+      padding: 16px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #1f1f1f;
+    }
+    .header span {
+      color: #10b981;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .logo {
+      width: 24px;
+      height: 24px;
+      background: #10b981;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #000;
+      font-size: 12px;
+    }
+    .page-info {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 12px;
+      word-break: break-all;
+      line-height: 1.4;
+    }
+    .page-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e0e0e0;
+      margin-bottom: 4px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-save {
+      background: #10b981;
+      color: #000;
+    }
+    .btn-save:hover { background: #0fa874; }
+    .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-open {
+      background: transparent;
+      color: #10b981;
+      border: 1px solid #1f1f1f;
+    }
+    .btn-open:hover { border-color: #10b981; }
+    .status {
+      font-size: 12px;
+      text-align: center;
+      padding: 8px;
+      border-radius: 4px;
+      margin-top: 4px;
+    }
+    .status.success { color: #10b981; background: rgba(16,185,129,0.1); }
+    .status.error { color: #ef4444; background: rgba(239,68,68,0.1); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">AI</div>
+    <span>AI News - BuHu</span>
+  </div>
+
+  <div id="page-info" class="page-info">
+    <div class="page-title" id="page-title">Loading...</div>
+    <div id="page-url"></div>
+  </div>
+
+  <button class="btn-save" id="save-btn">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+    Save to AI News
+  </button>
+
+  <button class="btn-open" id="open-btn">
+    Open Dashboard →
+  </button>
+
+  <div id="status" class="status" style="display:none"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
