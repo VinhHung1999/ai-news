@@ -1,4 +1,5 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ override: true });
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import multer from 'multer';
@@ -98,7 +99,7 @@ app.post('/api/news/collect', requireApiKey, async (_req: Request, res: Response
     console.log('[api] Manual collection triggered');
     const results = await runAllCollectors();
     const summary = results.map((r, i) => ({
-      source: ['GitHub', 'Anthropic', 'Google AI', 'Hacker News', 'Star History'][i],
+      source: ['GitHub', 'Anthropic', 'Google AI', 'Star History'][i],
       status: r.status,
       ...(r.status === 'fulfilled' ? r.value : { error: (r as PromiseRejectedResult).reason?.message }),
     }));
@@ -151,13 +152,16 @@ app.post('/api/articles/:id/fetch-content', async (req: Request, res: Response) 
     let markdown: string;
 
     if (article.source === 'github') {
-      // GitHub: fetch README.md directly from API (already markdown)
+      // GitHub: fetch README.md from API
       const repoName = article.title; // e.g. "owner/repo"
       const readmeRes = await fetch(`https://api.github.com/repos/${repoName}/readme`, {
         headers: { 'Accept': 'application/vnd.github.raw', 'User-Agent': 'AI-News-Hacker-Dashboard' }
       });
-      if (!readmeRes.ok) throw new Error(`GitHub README error: ${readmeRes.status}`);
-      markdown = await readmeRes.text();
+      if (readmeRes.ok) {
+        markdown = await readmeRes.text();
+      } else {
+        return res.status(503).json({ error: `GitHub API unavailable (${readmeRes.status}). Try again later.`, retryable: true });
+      }
     } else {
       // Other sources: fetch via Jina Reader
       const jinaRes = await fetch(`https://r.jina.ai/${article.url}`, {
@@ -324,7 +328,7 @@ cron.schedule('0 5 * * *', async () => {
   }
 });
 
-const PORT = 3342;
+const PORT = Number(process.env.PORT) || 3342;
 app.listen(PORT, () => {
   console.log(`[root@ai.news:~#] Backend server active on http://localhost:${PORT}`);
   console.log(`[cron] Scheduler active. Next run: 5:00 AM daily.`);

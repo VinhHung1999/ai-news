@@ -14,6 +14,7 @@ interface ArticleDetailProps {
 const ArticleDetail = ({ article, onBack }: ArticleDetailProps) => {
   const [fullContent, setFullContent] = useState<string | null>(null);
   const [loadingContent, setLoadingContent] = useState(false);
+  const [contentError, setContentError] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(true);
   const [bookmarked, setBookmarked] = useState(!!article.bookmarked);
   const [title, setTitle] = useState(article.title);
@@ -26,14 +27,18 @@ const ArticleDetail = ({ article, onBack }: ArticleDetailProps) => {
 
   const fetchContent = async () => {
     setLoadingContent(true);
+    setContentError(null);
     try {
       const res = await apiFetch(`/api/articles/${article.id}/fetch-content`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         setFullContent(data.content);
+      } else {
+        const data = await res.json();
+        setContentError(data.error || 'Failed to fetch content');
       }
     } catch (err) {
-      console.error('Fetch content error:', err);
+      setContentError('Network error');
     } finally {
       setLoadingContent(false);
     }
@@ -140,6 +145,13 @@ const ArticleDetail = ({ article, onBack }: ArticleDetailProps) => {
             {loadingContent ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-brand)', padding: '2rem 0' }}>
                 <Loader2 size={16} className="spin" /> Fetching article content...
+              </div>
+            ) : contentError ? (
+              <div style={{ padding: '1.5rem', background: 'rgba(239,68,68,0.05)', borderLeft: '4px solid #ef4444', borderRadius: '4px', marginBottom: '2rem' }}>
+                <p style={{ color: '#ef4444', fontSize: '0.9rem', marginBottom: '0.75rem' }}>{contentError}</p>
+                <button className="btn-secondary" onClick={fetchContent} style={{ fontSize: '0.85rem' }}>
+                  Retry
+                </button>
               </div>
             ) : fullContent ? (
               <div className="markdown-body" style={{ color: 'var(--text-primary)', lineHeight: 1.8, fontSize: '0.95rem', marginBottom: '2rem' }}>

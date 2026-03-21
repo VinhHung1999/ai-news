@@ -12,7 +12,6 @@ const SOURCES = [
   { key: 'github', label: '--github' },
   { key: 'anthropic', label: '--anthropic' },
   { key: 'google_ai', label: '--google-ai' },
-  { key: 'hackernews', label: '--hackernews' },
 ];
 
 const NewsFeed = ({ onSelectArticle }: NewsFeedProps) => {

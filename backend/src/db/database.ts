@@ -1,14 +1,23 @@
+import dotenv from 'dotenv';
+dotenv.config({ override: true });
 import pg from 'pg';
 import type { Article, ArticleRow } from '../types';
 
-const pool = new pg.Pool({
-  database: 'ai_news',
-  host: 'localhost',
-  port: Number(process.env.DB_PORT) || 5432,
-});
+let pool: pg.Pool;
+
+function getPool(): pg.Pool {
+  if (!pool) {
+    pool = new pg.Pool({
+      database: 'ai_news',
+      host: 'localhost',
+      port: Number(process.env.DB_PORT) || 5432,
+    });
+  }
+  return pool;
+}
 
 export async function insertMany(articles: Article[]): Promise<number> {
-  const client = await pool.connect();
+  const client = await getPool().connect();
   try {
     let inserted = 0;
     for (const a of articles) {
@@ -34,12 +43,12 @@ export async function getArticlesByDate(date: string, source?: string | null): P
     params.push(source);
   }
   query += ' ORDER BY id DESC';
-  const result = await pool.query(query, params);
+  const result = await getPool().query(query, params);
   return result.rows;
 }
 
 export async function getTopPicks(date: string): Promise<ArticleRow[]> {
-  const result = await pool.query(
+  const result = await getPool().query(
     'SELECT * FROM articles WHERE collected_at = $1 AND is_top_pick = TRUE ORDER BY upvotes DESC',
     [date]
   );
@@ -53,7 +62,7 @@ export async function markTopPicks(date: string): Promise<void> {
   );
 
   for (const { source } of sources.rows) {
-    await pool.query(
+    await getPool().query(
       `UPDATE articles SET is_top_pick = TRUE
        WHERE id = (SELECT id FROM articles WHERE collected_at = $1 AND source = $2 ORDER BY upvotes DESC LIMIT 1)`,
       [date, source]
@@ -62,12 +71,12 @@ export async function markTopPicks(date: string): Promise<void> {
 }
 
 export async function getLatestCollectionDate(): Promise<string | null> {
-  const result = await pool.query("SELECT to_char(MAX(collected_at), 'YYYY-MM-DD') as date FROM articles");
+  const result = await getPool().query("SELECT to_char(MAX(collected_at), 'YYYY-MM-DD') as date FROM articles");
   return result.rows[0]?.date || null;
 }
 
 export async function insertOneArticle(article: Article): Promise<ArticleRow> {
-  const result = await pool.query(
+  const result = await getPool().query(
     `INSERT INTO articles (external_id, source, title, description, url, image_url, tags, upvotes, comments, published_at, collected_at, is_top_pick, full_content)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
      RETURNING *`,
@@ -77,24 +86,24 @@ export async function insertOneArticle(article: Article): Promise<ArticleRow> {
 }
 
 export async function getArticleById(id: number): Promise<ArticleRow | null> {
-  const result = await pool.query('SELECT * FROM articles WHERE id = $1', [id]);
+  const result = await getPool().query('SELECT * FROM articles WHERE id = $1', [id]);
   return result.rows[0] || null;
 }
 
 export async function updateFullContent(id: number, content: string): Promise<void> {
-  await pool.query('UPDATE articles SET full_content = $1 WHERE id = $2', [content, id]);
+  await getPool().query('UPDATE articles SET full_content = $1 WHERE id = $2', [content, id]);
 }
 
 export async function updateAiSummary(id: number, summary: string): Promise<void> {
-  await pool.query('UPDATE articles SET ai_summary = $1 WHERE id = $2', [summary, id]);
+  await getPool().query('UPDATE articles SET ai_summary = $1 WHERE id = $2', [summary, id]);
 }
 
 export async function updateTitle(id: number, title: string): Promise<void> {
-  await pool.query('UPDATE articles SET title = $1 WHERE id = $2', [title, id]);
+  await getPool().query('UPDATE articles SET title = $1 WHERE id = $2', [title, id]);
 }
 
 export async function toggleBookmark(id: number): Promise<boolean> {
-  const result = await pool.query(
+  const result = await getPool().query(
     'UPDATE articles SET bookmarked = NOT bookmarked WHERE id = $1 RETURNING bookmarked',
     [id]
   );
@@ -102,10 +111,10 @@ export async function toggleBookmark(id: number): Promise<boolean> {
 }
 
 export async function getBookmarks(): Promise<ArticleRow[]> {
-  const result = await pool.query('SELECT * FROM articles WHERE bookmarked = TRUE ORDER BY id DESC');
+  const result = await getPool().query('SELECT * FROM articles WHERE bookmarked = TRUE ORDER BY id DESC');
   return result.rows;
 }
 
 export async function closePool(): Promise<void> {
-  await pool.end();
+  if (pool) await pool.end();
 }

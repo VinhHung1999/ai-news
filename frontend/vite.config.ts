@@ -5,6 +5,6 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    allowedHosts: ['ai-news.hungphu.work'],
+    allowedHosts: ['ai-news.hungphu.work', 'dev-ai-news.hungphu.work'],
   },
 })
