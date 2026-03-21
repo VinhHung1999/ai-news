@@ -1,5 +1,4 @@
 const API_BASE = 'https://api-ainews.hungphu.work';
-const API_KEY = 'f3626b5739823a2a8c33b60e72ed774403c23afc2953cfb36408713872e3bf26';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const saveBtn = document.getElementById('save-btn');
@@ -7,6 +6,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   const statusEl = document.getElementById('status');
   const pageTitleEl = document.getElementById('page-title');
   const pageUrlEl = document.getElementById('page-url');
+  const apiKeyInput = document.getElementById('api-key-input');
+  const saveKeyBtn = document.getElementById('save-key-btn');
+  const savedBadge = document.getElementById('saved-badge');
+  const mainContent = document.getElementById('main-content');
+  const noKeyMsg = document.getElementById('no-key-msg');
+
+  // Load saved API key
+  const stored = await chrome.storage.local.get('apiKey');
+  let apiKey = stored.apiKey || '';
+
+  if (apiKey) {
+    apiKeyInput.value = '••••••••••••••••';
+    savedBadge.style.display = 'inline';
+    showMain();
+  } else {
+    noKeyMsg.style.display = 'block';
+  }
+
+  function showMain() {
+    mainContent.style.display = 'block';
+    noKeyMsg.style.display = 'none';
+  }
+
+  // Save API key
+  saveKeyBtn.addEventListener('click', async () => {
+    const key = apiKeyInput.value.trim();
+    if (!key || key === '••••••••••••••••') return;
+    await chrome.storage.local.set({ apiKey: key });
+    apiKey = key;
+    apiKeyInput.value = '••••••••••••••••';
+    savedBadge.style.display = 'inline';
+    showMain();
+  });
 
   // Get current tab info
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -17,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Save button
   saveBtn.addEventListener('click', async () => {
-    if (!tab?.url) return;
+    if (!tab?.url || !apiKey) return;
     saveBtn.disabled = true;
     saveBtn.textContent = 'Saving...';
     statusEl.style.display = 'none';
@@ -27,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': API_KEY,
+          'X-API-Key': apiKey,
         },
         body: JSON.stringify({ url: tab.url }),
       });

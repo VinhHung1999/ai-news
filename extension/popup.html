@@ -84,6 +84,51 @@
     }
     .status.success { color: #10b981; background: rgba(16,185,129,0.1); }
     .status.error { color: #ef4444; background: rgba(239,68,68,0.1); }
+
+    /* Settings */
+    .settings {
+      margin-bottom: 12px;
+    }
+    .settings label {
+      font-size: 11px;
+      color: #888;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .settings input {
+      width: 100%;
+      padding: 6px 8px;
+      background: #111;
+      border: 1px solid #1f1f1f;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 12px;
+      font-family: monospace;
+      outline: none;
+    }
+    .settings input:focus { border-color: #10b981; }
+    .settings-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .settings-row input { flex: 1; }
+    .btn-sm {
+      width: auto;
+      padding: 6px 10px;
+      font-size: 11px;
+      margin: 0;
+    }
+    .saved-badge {
+      font-size: 11px;
+      color: #10b981;
+    }
+    .no-key {
+      text-align: center;
+      color: #888;
+      font-size: 12px;
+      padding: 8px;
+    }
   </style>
 </head>
 <body>
@@ -92,21 +137,36 @@
     <span>AI News - BuHu</span>
   </div>
 
-  <div id="page-info" class="page-info">
-    <div class="page-title" id="page-title">Loading...</div>
-    <div id="page-url"></div>
+  <!-- API Key Settings -->
+  <div class="settings" id="settings-section">
+    <label>API Key <span id="saved-badge" class="saved-badge" style="display:none">✓ saved</span></label>
+    <div class="settings-row">
+      <input type="password" id="api-key-input" placeholder="Enter your API key..." />
+      <button class="btn-save btn-sm" id="save-key-btn">Save</button>
+    </div>
   </div>
 
-  <button class="btn-save" id="save-btn">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
-    Save to AI News
-  </button>
+  <div id="main-content" style="display:none">
+    <div id="page-info" class="page-info">
+      <div class="page-title" id="page-title">Loading...</div>
+      <div id="page-url"></div>
+    </div>
 
-  <button class="btn-open" id="open-btn">
-    Open Dashboard →
-  </button>
+    <button class="btn-save" id="save-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+      Save to AI News
+    </button>
 
-  <div id="status" class="status" style="display:none"></div>
+    <button class="btn-open" id="open-btn">
+      Open Dashboard →
+    </button>
+
+    <div id="status" class="status" style="display:none"></div>
+  </div>
+
+  <div id="no-key-msg" class="no-key" style="display:none">
+    Enter your API key above to start saving articles.
+  </div>
 
   <script src="popup.js"></script>
 </body>
