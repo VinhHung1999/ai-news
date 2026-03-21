@@ -309,7 +309,7 @@ app.get('/api/bookmarks', async (_req: Request, res: Response) => {
 import path from 'path';
 const frontendDist = path.join(__dirname, '..', '..', 'frontend', 'dist');
 app.use(express.static(frontendDist));
-app.get('*', (_req: Request, res: Response) => {
+app.use((_req: Request, res: Response) => {
   res.sendFile(path.join(frontendDist, 'index.html'));
 });
 
