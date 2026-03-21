@@ -305,6 +305,14 @@ app.get('/api/bookmarks', async (_req: Request, res: Response) => {
   }
 });
 
+// Serve frontend static files in production
+import path from 'path';
+const frontendDist = path.join(__dirname, '..', '..', 'frontend', 'dist');
+app.use(express.static(frontendDist));
+app.get('*', (_req: Request, res: Response) => {
+  res.sendFile(path.join(frontendDist, 'index.html'));
+});
+
 // Cron: collect daily at 5AM
 import cron from 'node-cron';
 cron.schedule('0 5 * * *', async () => {
