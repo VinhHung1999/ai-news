@@ -1,7 +1,7 @@
-// Open side panel when clicking extension icon on YouTube
-chrome.action.onClicked.addListener(async (tab) => {
-  if (tab.url && (tab.url.includes('youtube.com/watch') || tab.url.includes('youtu.be/'))) {
-    await chrome.sidePanel.open({ tabId: tab.id });
+// Open side panel on message from popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'openSidePanel' && message.tabId) {
+    chrome.sidePanel.open({ tabId: message.tabId });
   }
 });
 
