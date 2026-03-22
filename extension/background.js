@@ -4,50 +4,62 @@ chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 // Handle transcript requests from sidepanel
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'getTranscript') {
-    fetchTranscriptViaInnertube(message.videoId)
+    fetchTranscript(message.videoId)
       .then(result => sendResponse({ success: true, ...result }))
       .catch(err => sendResponse({ success: false, error: err.message }));
-    return true; // keep channel open for async response
+    return true;
   }
 });
 
-async function fetchTranscriptViaInnertube(videoId) {
-  // Use Android client — doesn't require POT token
-  const playerResponse = await fetch('https://www.youtube.com/youtubei/v1/player', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'User-Agent': 'com.google.android.youtube/19.09.37 (Linux; U; Android 11) gzip',
-    },
-    body: JSON.stringify({
-      videoId,
-      context: {
-        client: {
-          clientName: 'ANDROID',
-          clientVersion: '19.09.37',
-          androidSdkVersion: 30,
-          hl: 'en',
-          gl: 'US',
-        }
-      }
-    })
+async function fetchTranscript(videoId) {
+  // Step 1: Get video page to extract caption tracks (browser context has cookies)
+  const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+    headers: { 'Accept-Language': 'en-US,en;q=0.9' }
   });
+  const html = await pageRes.text();
 
-  const data = await playerResponse.json();
-  const tracks = data?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+  // Extract video title
+  const titleMatch = html.match(/"title":"(.*?)"/);
+  const title = titleMatch ? JSON.parse(`"${titleMatch[1]}"`) : '';
+
+  // Extract author
+  const authorMatch = html.match(/"ownerChannelName":"(.*?)"/);
+  const author = authorMatch ? JSON.parse(`"${authorMatch[1]}"`) : '';
+
+  // Extract thumbnail
+  const thumbMatch = html.match(/"thumbnail":\{"thumbnails":\[\{"url":"(.*?)"/);
+  const thumbnail = thumbMatch ? thumbMatch[1] : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+  // Extract caption tracks
+  const captionsMatch = html.match(/"captionTracks":(\[.*?\])/);
+  if (!captionsMatch) {
+    throw new Error('No captions available for this video');
+  }
+
+  const tracks = JSON.parse(captionsMatch[1]);
   if (!tracks || tracks.length === 0) {
-    throw new Error('No captions available');
+    throw new Error('No caption tracks found');
   }
 
   // Prefer English
   const track = tracks.find(t => t.languageCode === 'en') || tracks[0];
 
-  // Fetch transcript as JSON
-  const transcriptUrl = track.baseUrl + '&fmt=json3';
-  const transcriptResponse = await fetch(transcriptUrl);
-  const transcript = await transcriptResponse.json();
+  // Step 2: Fetch transcript (extension background has YouTube cookies)
+  // Use fmt=json3 for structured JSON
+  let url = track.baseUrl;
+  // Decode unicode escapes
+  url = url.replace(/\\u0026/g, '&');
+  url += '&fmt=json3';
 
-  const items = (transcript.events || [])
+  const transcriptRes = await fetch(url);
+  const transcriptText = await transcriptRes.text();
+
+  if (!transcriptText || transcriptText.length === 0) {
+    throw new Error('Transcript response empty (may require POT token)');
+  }
+
+  const transcriptData = JSON.parse(transcriptText);
+  const items = (transcriptData.events || [])
     .filter(e => e.segs)
     .map(e => {
       const startSec = (e.tStartMs || 0) / 1000;
@@ -60,11 +72,5 @@ async function fetchTranscriptViaInnertube(videoId) {
     })
     .filter(item => item.text);
 
-  return {
-    transcript: items,
-    lang: track.languageCode,
-    title: data?.videoDetails?.title || '',
-    author: data?.videoDetails?.author || '',
-    thumbnail: data?.videoDetails?.thumbnail?.thumbnails?.pop()?.url || '',
-  };
+  return { transcript: items, lang: track.languageCode, title, author, thumbnail };
 }
