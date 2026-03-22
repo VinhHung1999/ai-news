@@ -52,8 +52,8 @@ function formatArticle(article: ArticleRow, index: number): FormattedArticle {
     title: article.title,
     source: SOURCE_LABELS[article.source] || article.source,
     time: article.published_at
-      ? new Date(article.published_at).toLocaleDateString()
-      : article.collected_at,
+      ? new Date(article.published_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+      : new Date(article.collected_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
     tags,
     upvotes: article.upvotes,
     comments: article.comments,
