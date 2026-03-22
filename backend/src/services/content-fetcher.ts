@@ -1,10 +1,18 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdf = require('pdf-parse');
 import mammoth from 'mammoth';
-// youtube-transcript is ESM-only, use dynamic import
-async function getYoutubeTranscript(videoId: string) {
-  const { YoutubeTranscript } = await import('youtube-transcript');
-  return YoutubeTranscript.fetchTranscript(videoId);
+import path from 'path';
+// Fetch YouTube transcript via Python youtube-transcript-api (server-side)
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+const execFileAsync = promisify(execFile);
+
+async function getYoutubeTranscript(videoId: string): Promise<{ ts: string; text: string }[]> {
+  const scriptPath = path.join(__dirname, '..', '..', 'scripts', 'youtube-transcript.py');
+  const { stdout } = await execFileAsync('python3', [scriptPath, videoId], { timeout: 15000 });
+  const result = JSON.parse(stdout) as { success: boolean; transcript?: { ts: string; text: string }[]; error?: string };
+  if (!result.success) throw new Error(result.error || 'Failed to fetch transcript');
+  return result.transcript || [];
 }
 
 const GITHUB_REPO_REGEX = /github\.com\/([^/]+\/[^/]+)/;
@@ -40,12 +48,7 @@ export async function fetchYouTubeInfo(url: string): Promise<YouTubeInfo> {
   let transcript: string;
   try {
     const items = await getYoutubeTranscript(videoId);
-    transcript = items.map(item => {
-      const mins = Math.floor(item.offset / 60000);
-      const secs = Math.floor((item.offset % 60000) / 1000);
-      const ts = `${mins}:${secs.toString().padStart(2, '0')}`;
-      return `[${ts}] ${item.text}`;
-    }).join('\n');
+    transcript = items.map(item => `[${item.ts}] ${item.text}`).join('\n');
   } catch (err) {
     transcript = 'Transcript not available for this video.';
   }
