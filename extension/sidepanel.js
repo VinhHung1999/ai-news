@@ -45,39 +45,33 @@ async function loadPage() {
 
   try {
     if (isYouTube) {
-      // YouTube: get video info from oEmbed + transcript from content script
+      // YouTube: get transcript via background script (Innertube Android API)
       const videoId = tab.url.match(/[?&]v=([a-zA-Z0-9_-]{11})/)?.[1] || tab.url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/)?.[1];
 
-      // Fetch video info (title, thumbnail, author) from oEmbed
-      const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(tab.url)}&format=json`);
-      const oembed = oembedRes.ok ? await oembedRes.json() : { title: tab.title, author_name: 'Unknown', thumbnail_url: '' };
-
-      // Extract transcript via content script (client-side, has YouTube cookies)
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ['youtube-transcript.js'],
+      const result = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ action: 'getTranscript', videoId }, resolve);
       });
-      const scriptResult = results?.[0]?.result || {};
 
-      let transcriptText = '';
-      if (scriptResult.transcript && scriptResult.transcript.length > 0) {
-        transcriptText = scriptResult.transcript.map(t => `[${t.ts}] ${t.text}`).join('\n');
-      }
+      if (!result?.success) throw new Error(result?.error || 'Failed to get transcript');
+
+      const transcriptText = result.transcript?.length > 0
+        ? result.transcript.map(t => `[${t.ts}] ${t.text}`).join('\n')
+        : '';
 
       pageData = {
         url: tab.url,
-        title: oembed.title || tab.title,
+        title: result.title || tab.title,
         content: transcriptText || 'Transcript not available for this video.',
-        thumbnail: oembed.thumbnail_url,
+        thumbnail: result.thumbnail,
         isYouTube: true,
-        author: oembed.author_name,
+        author: result.author,
         summary: null,
       };
 
       // Show thumbnail
       const thumbEl = document.getElementById('thumbnail');
-      if (oembed.thumbnail_url) {
-        thumbEl.src = oembed.thumbnail_url;
+      if (result.thumbnail) {
+        thumbEl.src = result.thumbnail;
         thumbEl.classList.add('visible');
       }
       document.getElementById('page-title').textContent = pageData.title;
