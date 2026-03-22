@@ -47,12 +47,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     pageUrlEl.textContent = tab.url || '';
   }
 
-  // If on YouTube, open side panel via background script
-  if (tab?.url && (tab.url.includes('youtube.com/watch') || tab.url.includes('youtu.be/'))) {
-    chrome.runtime.sendMessage({ action: 'openSidePanel', tabId: tab.id });
-    window.close();
-    return;
-  }
 
   // Save button
   saveBtn.addEventListener('click', async () => {
