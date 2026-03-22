@@ -3,7 +3,7 @@
   "name": "AI News - BuHu",
   "version": "1.1.0",
   "description": "Save articles to AI News dashboard, YouTube transcript & summary",
-  "permissions": ["activeTab", "storage", "sidePanel", "tabs"],
+  "permissions": ["activeTab", "storage", "sidePanel", "tabs", "scripting"],
   "action": {
     "default_icon": {
       "16": "icons/icon16.png",

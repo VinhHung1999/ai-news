@@ -45,38 +45,50 @@ async function loadPage() {
 
   try {
     if (isYouTube) {
-      // YouTube: fetch transcript
-      const res = await fetch(`${API_BASE}/api/youtube/info`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: tab.url }),
+      // YouTube: get video info from oEmbed + transcript from content script
+      const videoId = tab.url.match(/[?&]v=([a-zA-Z0-9_-]{11})/)?.[1] || tab.url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/)?.[1];
+
+      // Fetch video info (title, thumbnail, author) from oEmbed
+      const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(tab.url)}&format=json`);
+      const oembed = oembedRes.ok ? await oembedRes.json() : { title: tab.title, author_name: 'Unknown', thumbnail_url: '' };
+
+      // Extract transcript via content script (client-side, has YouTube cookies)
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['youtube-transcript.js'],
       });
-      if (!res.ok) throw new Error('Failed to fetch video info');
-      const info = await res.json();
+      const scriptResult = results?.[0]?.result || {};
+
+      let transcriptText = '';
+      if (scriptResult.transcript && scriptResult.transcript.length > 0) {
+        transcriptText = scriptResult.transcript.map(t => `[${t.ts}] ${t.text}`).join('\n');
+      }
 
       pageData = {
         url: tab.url,
-        title: info.title,
-        content: info.transcript,
-        thumbnail: info.thumbnail,
+        title: oembed.title || tab.title,
+        content: transcriptText || 'Transcript not available for this video.',
+        thumbnail: oembed.thumbnail_url,
         isYouTube: true,
-        author: info.author,
+        author: oembed.author_name,
         summary: null,
       };
 
       // Show thumbnail
       const thumbEl = document.getElementById('thumbnail');
-      thumbEl.src = info.thumbnail;
-      thumbEl.classList.add('visible');
-      document.getElementById('page-title').textContent = info.title;
-      document.getElementById('page-meta').textContent = `🎬 ${info.author} · YouTube`;
+      if (oembed.thumbnail_url) {
+        thumbEl.src = oembed.thumbnail_url;
+        thumbEl.classList.add('visible');
+      }
+      document.getElementById('page-title').textContent = pageData.title;
+      document.getElementById('page-meta').textContent = `🎬 ${pageData.author} · YouTube`;
       document.getElementById('content-label').textContent = 'Transcript';
 
-      // Render transcript with timestamps
+      // Render transcript
       const bodyEl = document.getElementById('content-body');
       bodyEl.innerHTML = '';
-      if (info.transcript && info.transcript !== 'Transcript not available for this video.') {
-        info.transcript.split('\n').forEach(line => {
+      if (transcriptText) {
+        transcriptText.split('\n').forEach(line => {
           const div = document.createElement('div');
           const tsMatch = line.match(/^\[(\d+:\d+)\]\s*(.*)/);
           if (tsMatch) {
@@ -87,7 +99,7 @@ async function loadPage() {
           bodyEl.appendChild(div);
         });
       } else {
-        bodyEl.innerHTML = '<p style="color:#888">Transcript not available.</p>';
+        bodyEl.innerHTML = '<p style="color:#888">Transcript not available for this video.</p>';
       }
     } else {
       // Other pages: fetch via Jina Reader
