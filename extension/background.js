@@ -1,108 +1,83 @@
 // Open side panel on icon click
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 
-// Store captured timedtext URLs (with POT token) from YouTube player
-const capturedUrls = {};
-
-// Intercept YouTube player's timedtext requests to capture POT token
-chrome.webRequest.onBeforeRequest.addListener(
-  (details) => {
-    if (details.url.includes('/api/timedtext') && details.url.includes('v=')) {
-      const url = new URL(details.url);
-      const videoId = url.searchParams.get('v');
-      if (videoId) {
-        capturedUrls[videoId] = details.url;
-      }
-    }
-  },
-  { urls: ['*://www.youtube.com/api/timedtext*'] }
-);
-
-// Handle transcript requests from sidepanel
+// Handle messages from sidepanel and content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'getTranscript') {
-    fetchTranscript(message.videoId, message.tabId)
-      .then(result => sendResponse({ success: true, ...result }))
+    getTranscriptFromPage(message.tabId)
+      .then(result => sendResponse(result))
       .catch(err => sendResponse({ success: false, error: err.message }));
     return true;
   }
 });
 
-async function fetchTranscript(videoId, tabId) {
-  // Get video info from oEmbed
-  const oembedRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-  const oembed = oembedRes.ok ? await oembedRes.json() : {};
-  const title = oembed.title || '';
-  const author = oembed.author_name || '';
-  const thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+async function getTranscriptFromPage(tabId) {
+  // Inject content script that hooks into YouTube page context
+  const results = await chrome.scripting.executeScript({
+    target: { tabId },
+    world: 'MAIN', // Run in page's JS context, not isolated
+    func: async () => {
+      try {
+        // Method 1: Hook into ytInitialPlayerResponse (already in page)
+        const playerResponse = window.ytInitialPlayerResponse ||
+          document.querySelector('#movie_player')?.getPlayerResponse?.();
 
-  // Check if we already captured a timedtext URL for this video
-  let timedtextUrl = capturedUrls[videoId];
-
-  if (!timedtextUrl) {
-    // Reload the tab to trigger YouTube player to fetch captions
-    // Then wait a bit for the webRequest listener to capture it
-    if (tabId) {
-      await chrome.tabs.reload(tabId);
-      // Wait for the player to load and request captions
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      timedtextUrl = capturedUrls[videoId];
-    }
-  }
-
-  if (!timedtextUrl) {
-    // Last resort: try to extract from page via content script
-    if (tabId) {
-      const results = await chrome.scripting.executeScript({
-        target: { tabId },
-        func: () => {
-          // Try to get transcript from YouTube's transcript panel
-          const segments = document.querySelectorAll('ytd-transcript-segment-renderer');
-          if (segments.length > 0) {
-            return Array.from(segments).map(seg => {
-              const ts = seg.querySelector('.segment-timestamp')?.textContent?.trim() || '';
-              const text = seg.querySelector('.segment-text')?.textContent?.trim() || '';
-              return { ts, text };
-            });
-          }
-          return null;
+        if (!playerResponse) {
+          return { error: 'No player response found. Make sure video is loaded.' };
         }
-      });
 
-      const domTranscript = results?.[0]?.result;
-      if (domTranscript && domTranscript.length > 0) {
-        return { transcript: domTranscript, lang: 'en', title, author, thumbnail };
+        const captions = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+        if (!captions || captions.length === 0) {
+          return { error: 'No captions available for this video' };
+        }
+
+        // Get video details
+        const details = playerResponse?.videoDetails || {};
+        const title = details.title || document.title;
+        const author = details.author || '';
+        const thumbnail = details.thumbnail?.thumbnails?.pop()?.url || '';
+
+        // Prefer English track
+        const track = captions.find(t => t.languageCode === 'en') || captions[0];
+        const url = track.baseUrl;
+
+        // Fetch transcript - this runs in YouTube's page context so it has cookies/POT
+        const res = await fetch(url + '&fmt=json3');
+        const data = await res.json();
+
+        if (!data.events) {
+          return { error: 'No transcript events in response' };
+        }
+
+        const transcript = data.events
+          .filter(e => e.segs)
+          .map(e => {
+            const startSec = (e.tStartMs || 0) / 1000;
+            const mins = Math.floor(startSec / 60);
+            const secs = Math.floor(startSec % 60);
+            return {
+              ts: `${mins}:${secs.toString().padStart(2, '0')}`,
+              text: e.segs.map(s => s.utf8 || '').join('').replace(/\n/g, ' ').trim(),
+            };
+          })
+          .filter(item => item.text);
+
+        return {
+          success: true,
+          transcript,
+          lang: track.languageCode,
+          title,
+          author,
+          thumbnail,
+        };
+      } catch (err) {
+        return { error: 'Transcript extraction failed: ' + err.message };
       }
-    }
+    },
+  });
 
-    throw new Error('No captions captured yet. Try opening the video first, then click the extension icon again.');
-  }
-
-  // Fetch transcript using captured URL (has POT token)
-  // Change format to json3
-  const url = new URL(timedtextUrl);
-  url.searchParams.set('fmt', 'json3');
-
-  const transcriptRes = await fetch(url.toString());
-  const transcriptText = await transcriptRes.text();
-
-  if (!transcriptText || transcriptText.length === 0) {
-    throw new Error('Transcript response empty');
-  }
-
-  const transcriptData = JSON.parse(transcriptText);
-  const items = (transcriptData.events || [])
-    .filter(e => e.segs)
-    .map(e => {
-      const startSec = (e.tStartMs || 0) / 1000;
-      const mins = Math.floor(startSec / 60);
-      const secs = Math.floor(startSec % 60);
-      return {
-        ts: `${mins}:${secs.toString().padStart(2, '0')}`,
-        text: e.segs.map(s => s.utf8 || '').join('').replace(/\n/g, ' ').trim(),
-      };
-    })
-    .filter(item => item.text);
-
-  return { transcript: items, lang: url.searchParams.get('lang') || 'en', title, author, thumbnail };
+  const result = results?.[0]?.result;
+  if (!result) throw new Error('Script execution failed');
+  if (result.error) throw new Error(result.error);
+  return result;
 }
