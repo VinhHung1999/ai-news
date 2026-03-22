@@ -49,7 +49,7 @@ async function loadPage() {
       const videoId = tab.url.match(/[?&]v=([a-zA-Z0-9_-]{11})/)?.[1] || tab.url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/)?.[1];
 
       const result = await new Promise((resolve) => {
-        chrome.runtime.sendMessage({ action: 'getTranscript', videoId }, resolve);
+        chrome.runtime.sendMessage({ action: 'getTranscript', videoId, tabId: tab.id }, resolve);
       });
 
       if (!result?.success) throw new Error(result?.error || 'Failed to get transcript');
