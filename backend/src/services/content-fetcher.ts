@@ -1,7 +1,11 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdf = require('pdf-parse');
 import mammoth from 'mammoth';
-import { YoutubeTranscript } from 'youtube-transcript';
+// youtube-transcript is ESM-only, use dynamic import
+async function getYoutubeTranscript(videoId: string) {
+  const { YoutubeTranscript } = await import('youtube-transcript');
+  return YoutubeTranscript.fetchTranscript(videoId);
+}
 
 const GITHUB_REPO_REGEX = /github\.com\/([^/]+\/[^/]+)/;
 const YOUTUBE_REGEX = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
@@ -35,7 +39,7 @@ export async function fetchYouTubeInfo(url: string): Promise<YouTubeInfo> {
   // Fetch transcript
   let transcript: string;
   try {
-    const items = await YoutubeTranscript.fetchTranscript(videoId);
+    const items = await getYoutubeTranscript(videoId);
     transcript = items.map(item => {
       const mins = Math.floor(item.offset / 60000);
       const secs = Math.floor((item.offset % 60000) / 1000);
