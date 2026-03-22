@@ -45,18 +45,16 @@ async function loadPage() {
 
   try {
     if (isYouTube) {
-      // YouTube: get transcript via background script (Innertube Android API)
-      const videoId = tab.url.match(/[?&]v=([a-zA-Z0-9_-]{11})/)?.[1] || tab.url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/)?.[1];
-
-      const result = await new Promise((resolve) => {
-        chrome.runtime.sendMessage({ action: 'getTranscript', videoId, tabId: tab.id }, resolve);
+      // YouTube: get transcript via backend API (Python youtube-transcript-api)
+      const res = await fetch(`${API_BASE}/api/youtube/info`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: tab.url }),
       });
+      if (!res.ok) throw new Error('Failed to fetch video info');
+      const result = await res.json();
 
-      if (!result?.success) throw new Error(result?.error || 'Failed to get transcript');
-
-      const transcriptText = result.transcript?.length > 0
-        ? result.transcript.map(t => `[${t.ts}] ${t.text}`).join('\n')
-        : '';
+      const transcriptText = result.transcript || '';
 
       pageData = {
         url: tab.url,
@@ -75,7 +73,7 @@ async function loadPage() {
         thumbEl.classList.add('visible');
       }
       document.getElementById('page-title').textContent = pageData.title;
-      document.getElementById('page-meta').textContent = `🎬 ${pageData.author} · YouTube`;
+      document.getElementById('page-meta').textContent = `🎬 ${result.author} · YouTube`;
       document.getElementById('content-label').textContent = 'Transcript';
 
       // Render transcript
