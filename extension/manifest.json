@@ -4,6 +4,7 @@
   "version": "1.1.0",
   "description": "Save articles to AI News dashboard, YouTube transcript & summary",
   "permissions": ["activeTab", "storage", "sidePanel", "tabs", "scripting"],
+  "host_permissions": ["https://www.youtube.com/*", "https://youtube.com/*"],
   "action": {
     "default_icon": {
       "16": "icons/icon16.png",
