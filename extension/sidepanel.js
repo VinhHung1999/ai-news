@@ -70,7 +70,7 @@ async function loadPage() {
       const thumbEl = document.getElementById('thumbnail');
       if (result.thumbnail) {
         thumbEl.src = result.thumbnail;
-        thumbEl.classList.add('visible');
+        thumbEl.style.display = 'block';
       }
       document.getElementById('page-title').textContent = pageData.title;
       document.getElementById('page-meta').textContent = `🎬 ${result.author} · YouTube`;
@@ -114,7 +114,7 @@ async function loadPage() {
         summary: null,
       };
 
-      document.getElementById('thumbnail').classList.remove('visible');
+      document.getElementById('thumbnail').style.display = 'none';
       document.getElementById('page-title').textContent = title;
       document.getElementById('page-meta').textContent = new URL(tab.url).hostname;
       document.getElementById('content-label').textContent = 'Content';
