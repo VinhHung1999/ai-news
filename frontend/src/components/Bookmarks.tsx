@@ -47,7 +47,7 @@ const Bookmarks = ({ onSelectArticle }: BookmarksProps) => {
       ) : (
         <div className="news-grid">
           {bookmarks.map((n) => (
-            <NewsCard key={n.id} {...n} onClick={() => onSelectArticle(n)} />
+            <NewsCard key={n.id} {...n} onClick={() => onSelectArticle(n)} onDelete={(id) => setBookmarks(prev => prev.filter(a => a.id !== id))} />
           ))}
         </div>
       )}

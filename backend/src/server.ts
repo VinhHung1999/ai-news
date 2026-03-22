@@ -3,7 +3,7 @@ dotenv.config({ override: true });
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import multer from 'multer';
-import { getArticlesByDate, getTopPicks, getLatestCollectionDate, getArticleById, updateFullContent, updateAiSummary, toggleBookmark, getBookmarks, insertOneArticle, updateTitle } from './db/database';
+import { getArticlesByDate, getTopPicks, getLatestCollectionDate, getArticleById, updateFullContent, updateAiSummary, toggleBookmark, getBookmarks, insertOneArticle, updateTitle, deleteArticle } from './db/database';
 import { runAllCollectors } from './services/collector-runner';
 import { summarizeArticle, chatAboutArticle } from './services/ai';
 import { fetchContentFromUrl, extractContentFromFile, isYouTubeUrl, fetchYouTubeInfo } from './services/content-fetcher';
@@ -324,6 +324,17 @@ app.post('/api/articles/:id/save-summary', requireApiKey, async (req: Request, r
     const { summary } = req.body as { summary: string };
     if (!summary) return res.status(400).json({ error: 'Summary required' });
     await updateAiSummary(Number(req.params.id), summary);
+    res.json({ success: true });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: message });
+  }
+});
+
+// DELETE /api/articles/:id
+app.delete('/api/articles/:id', requireApiKey, async (req: Request, res: Response) => {
+  try {
+    await deleteArticle(Number(req.params.id));
     res.json({ success: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

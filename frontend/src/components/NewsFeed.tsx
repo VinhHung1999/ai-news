@@ -112,7 +112,7 @@ const NewsFeed = ({ onSelectArticle }: NewsFeedProps) => {
                 )}
                 <div className="news-grid">
                   {(topPick && topPick.upvotes > 0 ? rest : news).map((n) => (
-                    <NewsCard key={n.id} {...n} onClick={() => onSelectArticle(n)} />
+                    <NewsCard key={n.id} {...n} onClick={() => onSelectArticle(n)} onDelete={(id) => setNews(prev => prev.filter(a => a.id !== id))} />
                   ))}
                 </div>
               </>

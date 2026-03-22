@@ -102,6 +102,10 @@ export async function updateTitle(id: number, title: string): Promise<void> {
   await getPool().query('UPDATE articles SET title = $1 WHERE id = $2', [title, id]);
 }
 
+export async function deleteArticle(id: number): Promise<void> {
+  await getPool().query('DELETE FROM articles WHERE id = $1', [id]);
+}
+
 export async function toggleBookmark(id: number): Promise<boolean> {
   const result = await getPool().query(
     'UPDATE articles SET bookmarked = NOT bookmarked WHERE id = $1 RETURNING bookmarked',
