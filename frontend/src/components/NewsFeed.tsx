@@ -88,9 +88,13 @@ const NewsFeed = ({ onSelectArticle }: NewsFeedProps) => {
       ) : (
         <>
           {(() => {
-            // Top pick = highest upvotes, rest sorted by newest (already from API)
+            const todayNews = news.filter((n: any) => n.is_today);
+            const olderNews = news.filter((n: any) => !n.is_today);
             const topPick = [...news].sort((a, b) => b.upvotes - a.upvotes)[0];
-            const rest = news.filter(n => n.id !== topPick?.id);
+            const renderCard = (n: any) => (
+              <NewsCard key={n.id} {...n} onClick={() => onSelectArticle(n)} onDelete={(id: number) => setNews(prev => prev.filter(a => a.id !== id))} />
+            );
+
             return (
               <>
                 {topPick && topPick.upvotes > 0 && (
@@ -110,11 +114,24 @@ const NewsFeed = ({ onSelectArticle }: NewsFeedProps) => {
                     </div>
                   </div>
                 )}
-                <div className="news-grid">
-                  {(topPick && topPick.upvotes > 0 ? rest : news).map((n) => (
-                    <NewsCard key={n.id} {...n} onClick={() => onSelectArticle(n)} onDelete={(id) => setNews(prev => prev.filter(a => a.id !== id))} />
-                  ))}
-                </div>
+
+                {todayNews.length > 0 && (
+                  <>
+                    <div className="section-label">&gt; ./today.sh — {todayNews.length} new</div>
+                    <div className="news-grid">
+                      {todayNews.filter(n => n.id !== topPick?.id || topPick.upvotes === 0).map(renderCard)}
+                    </div>
+                  </>
+                )}
+
+                {olderNews.length > 0 && (
+                  <>
+                    <div className="section-label">&gt; ./history.log</div>
+                    <div className="news-grid">
+                      {olderNews.filter(n => n.id !== topPick?.id || topPick.upvotes === 0).map(renderCard)}
+                    </div>
+                  </>
+                )}
               </>
             );
           })()}

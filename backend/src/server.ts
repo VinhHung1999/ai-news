@@ -73,7 +73,17 @@ app.get('/api/news', async (req: Request, res: Response) => {
   try {
     const source = (req.query.source as string) || null;
     const articles = await getArticles(source);
-    res.json(articles.map(formatArticle));
+    // Latest collection date = "today's batch"
+    const latestDate = await getLatestCollectionDate();
+    res.json(articles.map((a, i) => {
+      // Format collected_at to YYYY-MM-DD matching latestDate format
+      const d = new Date(a.collected_at);
+      const collectedStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      return {
+        ...formatArticle(a, i),
+        is_today: collectedStr === latestDate,
+      };
+    }));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('Error fetching news:', message);

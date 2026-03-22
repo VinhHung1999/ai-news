@@ -234,6 +234,16 @@ html, body {
   color: var(--accent-brand);
 }
 
+/* === Section Label === */
+.section-label {
+  color: var(--accent-brand);
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 1.5rem 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed var(--border-default);
+}
+
 /* === News Grid & Card === */
 .news-grid {
   display: grid;
