@@ -3,38 +3,52 @@ import type { Article } from '../types';
 const BLOG_URL = 'https://claude.com/blog';
 const USER_AGENT = 'AI-News-Hacker-Dashboard';
 
+interface BlogPost {
+  slug: string;
+  date: string;
+}
+
 export async function collectClaudeBlog(): Promise<Article[]> {
   const res = await fetch(BLOG_URL, { headers: { 'User-Agent': USER_AGENT } });
   if (!res.ok) throw new Error(`Claude blog error: ${res.status}`);
   const html = await res.text();
 
-  // Extract unique blog slugs
-  const slugs: string[] = [];
-  const regex = /href="\/blog\/([^"]+)"/g;
+  // Extract date + slug pairs from the chronological list section
+  // Pattern: date appears before slug in HTML
+  const dateSlugRegex = /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d+,\s+\d{4})[\s\S]*?href="\/blog\/([^"]+)"/g;
+  const posts: BlogPost[] = [];
+  const seen = new Set<string>();
+
   let match;
-  while ((match = regex.exec(html)) !== null) {
-    if (!slugs.includes(match[1])) {
-      slugs.push(match[1]);
+  while ((match = dateSlugRegex.exec(html)) !== null) {
+    const date = match[1];
+    const slug = match[2];
+    if (!slug.startsWith('category/') && !seen.has(slug)) {
+      seen.add(slug);
+      posts.push({ slug, date });
     }
   }
 
-  if (slugs.length === 0) throw new Error('No posts found on Claude blog');
+  if (posts.length === 0) throw new Error('No dated posts found on Claude blog');
 
-  // Fetch metadata for first 5 posts
+  // Take 5 most recent
+  const recent = posts.slice(0, 5);
+
+  // Fetch metadata for each
   const articles: Article[] = [];
-  for (const slug of slugs.slice(0, 5)) {
+  for (const post of recent) {
     try {
-      const articleUrl = `${BLOG_URL}/${slug}`;
+      const articleUrl = `${BLOG_URL}/${post.slug}`;
       const articleRes = await fetch(articleUrl, { headers: { 'User-Agent': USER_AGENT } });
       if (!articleRes.ok) continue;
       const articleHtml = await articleRes.text();
 
-      const title = extractMeta(articleHtml, 'og:title')?.replace(' | Claude', '') || slug;
+      const title = extractMeta(articleHtml, 'og:title')?.replace(' | Claude', '') || post.slug;
       const description = extractMeta(articleHtml, 'og:description') || '';
       const image = extractMeta(articleHtml, 'og:image') || null;
 
       articles.push({
-        external_id: `claude-blog-${slug}`,
+        external_id: `claude-blog-${post.slug}`,
         source: 'anthropic',
         title,
         description: description.substring(0, 300),
@@ -43,10 +57,10 @@ export async function collectClaudeBlog(): Promise<Article[]> {
         tags: JSON.stringify(['claude', 'blog']),
         upvotes: 0,
         comments: 0,
-        published_at: null,
+        published_at: new Date(post.date).toISOString(),
       });
     } catch (err) {
-      console.warn(`[claude-blog] Failed to fetch ${slug}:`, err instanceof Error ? err.message : err);
+      console.warn(`[claude-blog] Failed to fetch ${post.slug}:`, err instanceof Error ? err.message : err);
     }
   }
 
