@@ -3,7 +3,7 @@ dotenv.config({ override: true });
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import multer from 'multer';
-import { getArticlesByDate, getTopPicks, getLatestCollectionDate, getArticleById, updateFullContent, updateAiSummary, toggleBookmark, getBookmarks, insertOneArticle, updateTitle, deleteArticle } from './db/database';
+import { getArticles, getTopPicks, getLatestCollectionDate, getArticleById, updateFullContent, updateAiSummary, toggleBookmark, getBookmarks, insertOneArticle, updateTitle, deleteArticle } from './db/database';
 import { runAllCollectors } from './services/collector-runner';
 import { summarizeArticle, chatAboutArticle } from './services/ai';
 import { fetchContentFromUrl, extractContentFromFile, isYouTubeUrl, fetchYouTubeInfo } from './services/content-fetcher';
@@ -71,10 +71,8 @@ function formatArticle(article: ArticleRow, index: number): FormattedArticle {
 
 app.get('/api/news', async (req: Request, res: Response) => {
   try {
-    const date = (req.query.date as string) || await getLatestCollectionDate();
-    if (!date) return res.json([]);
     const source = (req.query.source as string) || null;
-    const articles = await getArticlesByDate(date, source);
+    const articles = await getArticles(source);
     res.json(articles.map(formatArticle));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
@@ -115,9 +113,7 @@ app.post('/api/news/collect', requireApiKey, async (_req: Request, res: Response
 
 app.get('/api/github', async (_req: Request, res: Response) => {
   try {
-    const date = await getLatestCollectionDate();
-    if (!date) return res.json([]);
-    const articles = await getArticlesByDate(date, 'github');
+    const articles = await getArticles('github');
     res.json(articles.map(formatArticle));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

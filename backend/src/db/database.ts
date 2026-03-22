@@ -35,11 +35,11 @@ export async function insertMany(articles: Article[]): Promise<number> {
   }
 }
 
-export async function getArticlesByDate(date: string, source?: string | null): Promise<ArticleRow[]> {
-  let query = 'SELECT * FROM articles WHERE collected_at = $1';
-  const params: string[] = [date];
+export async function getArticles(source?: string | null): Promise<ArticleRow[]> {
+  let query = 'SELECT * FROM articles';
+  const params: string[] = [];
   if (source) {
-    query += ' AND source = $2';
+    query += ' WHERE source = $1';
     params.push(source);
   }
   query += ' ORDER BY published_at DESC NULLS LAST, id DESC';
