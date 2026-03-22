@@ -42,7 +42,7 @@ export async function getArticlesByDate(date: string, source?: string | null): P
     query += ' AND source = $2';
     params.push(source);
   }
-  query += ' ORDER BY id DESC';
+  query += ' ORDER BY published_at DESC NULLS LAST, id DESC';
   const result = await getPool().query(query, params);
   return result.rows;
 }
