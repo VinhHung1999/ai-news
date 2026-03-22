@@ -47,17 +47,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     pageUrlEl.textContent = tab.url || '';
   }
 
-  // If on YouTube, show hint to open side panel
+  // If on YouTube, open side panel immediately
   if (tab?.url && (tab.url.includes('youtube.com/watch') || tab.url.includes('youtu.be/'))) {
-    const hint = document.createElement('div');
-    hint.style.cssText = 'padding:8px;background:rgba(239,68,68,0.1);border-radius:4px;margin-bottom:12px;text-align:center;';
-    hint.innerHTML = '<span style="font-size:12px;color:#ef4444">🎬 YouTube detected — <a href="#" id="open-sidepanel" style="color:#10b981">Open Side Panel</a> for transcript & summary</span>';
-    document.getElementById('page-info').before(hint);
-    document.getElementById('open-sidepanel').addEventListener('click', async (e) => {
-      e.preventDefault();
-      await chrome.sidePanel.open({ tabId: tab.id });
-      window.close();
-    });
+    await chrome.sidePanel.open({ tabId: tab.id });
+    window.close();
+    return;
   }
 
   // Save button
