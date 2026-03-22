@@ -6,7 +6,7 @@ import multer from 'multer';
 import { getArticlesByDate, getTopPicks, getLatestCollectionDate, getArticleById, updateFullContent, updateAiSummary, toggleBookmark, getBookmarks, insertOneArticle, updateTitle } from './db/database';
 import { runAllCollectors } from './services/collector-runner';
 import { summarizeArticle, chatAboutArticle } from './services/ai';
-import { fetchContentFromUrl, extractContentFromFile } from './services/content-fetcher';
+import { fetchContentFromUrl, extractContentFromFile, isYouTubeUrl, fetchYouTubeInfo } from './services/content-fetcher';
 import type { ArticleRow, FormattedArticle } from './types';
 
 const app = express();
@@ -30,6 +30,7 @@ const SOURCE_GRADIENTS: Record<string, string> = {
   anthropic: 'linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 100%)',
   google_ai: 'linear-gradient(135deg, #0a1628 0%, #1a2940 100%)',
   hackernews: 'linear-gradient(135deg, #1a1200 0%, #332600 100%)',
+  youtube: 'linear-gradient(135deg, #1a0000 0%, #330a0a 100%)',
   manual: 'linear-gradient(135deg, #1a0a1a 0%, #2d1b2d 100%)',
 };
 
@@ -38,6 +39,7 @@ const SOURCE_LABELS: Record<string, string> = {
   anthropic: 'Anthropic',
   google_ai: 'Google AI',
   hackernews: 'Hacker News',
+  youtube: 'YouTube',
   manual: 'Manual',
 };
 
@@ -226,6 +228,34 @@ app.post('/api/articles/:id/chat', async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/youtube/info — get YouTube video info + transcript (without saving)
+app.post('/api/youtube/info', async (req: Request, res: Response) => {
+  try {
+    const { url } = req.body as { url: string };
+    if (!url || !isYouTubeUrl(url)) return res.status(400).json({ error: 'Invalid YouTube URL' });
+    const info = await fetchYouTubeInfo(url);
+    res.json(info);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('YouTube info error:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// POST /api/youtube/summarize — summarize transcript directly (without saving)
+app.post('/api/youtube/summarize', async (req: Request, res: Response) => {
+  try {
+    const { title, transcript } = req.body as { title: string; transcript: string };
+    if (!transcript) return res.status(400).json({ error: 'Transcript required' });
+    const summary = await summarizeArticle(title || 'YouTube Video', transcript);
+    res.json({ summary });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('YouTube summarize error:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
 // POST /api/articles/add — add article manually (URL or file)
 app.post('/api/articles/add', requireApiKey, upload.single('file'), async (req: Request, res: Response) => {
   try {
@@ -250,14 +280,15 @@ app.post('/api/articles/add', requireApiKey, upload.single('file'), async (req: 
       return res.status(400).json({ error: 'Provide a URL or upload a file' });
     }
 
+    const isYT = req.body.url && isYouTubeUrl(req.body.url);
     const article = await insertOneArticle({
-      external_id: `manual-${Date.now()}`,
-      source: 'manual' as any,
+      external_id: `${isYT ? 'youtube' : 'manual'}-${Date.now()}`,
+      source: (isYT ? 'youtube' : 'manual') as any,
       title,
       description: content.substring(0, 300),
       url,
       image_url: null,
-      tags: JSON.stringify(['manual']),
+      tags: JSON.stringify([isYT ? 'youtube' : 'manual']),
       upvotes: 0,
       comments: 0,
       published_at: new Date().toISOString(),

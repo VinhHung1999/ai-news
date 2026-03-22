@@ -10,10 +10,11 @@ const client = new OpenAI({
 const MODEL = 'grok-4-1-fast-non-reasoning';
 
 // System prompt shared between summary and chat for cache reuse
-function buildSystemPrompt(articleContent: string, title: string): string {
-  return `You are BuHu Assistant — a helpful AI that analyzes articles about AI/tech news.
+function buildSystemPrompt(articleContent: string, title: string, isVideo = false): string {
+  const type = isVideo ? 'YouTube video transcript' : 'article';
+  return `You are BuHu Assistant — a helpful AI that analyzes ${type}s about AI/tech news.
 
-## Article: ${title}
+## ${isVideo ? 'Video' : 'Article'}: ${title}
 
 ${articleContent}
 
@@ -21,7 +22,7 @@ ${articleContent}
 Instructions:
 - Always respond in the same language the user uses.
 - Be concise and informative.
-- Reference specific parts of the article when answering.`;
+- Reference specific parts of the ${type} when answering.${isVideo ? '\n- Include relevant timestamps when referencing video content.' : ''}`;
 }
 
 export async function summarizeArticle(title: string, content: string): Promise<string> {

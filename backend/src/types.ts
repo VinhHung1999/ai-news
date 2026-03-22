@@ -1,6 +1,6 @@
 export interface Article {
   external_id: string;
-  source: 'github' | 'anthropic' | 'google_ai' | 'hackernews';
+  source: 'github' | 'anthropic' | 'google_ai' | 'hackernews' | 'youtube' | 'manual';
   title: string;
   description: string;
   url: string;

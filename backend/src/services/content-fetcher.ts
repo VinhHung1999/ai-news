@@ -1,10 +1,71 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdf = require('pdf-parse');
 import mammoth from 'mammoth';
+import { YoutubeTranscript } from 'youtube-transcript';
 
 const GITHUB_REPO_REGEX = /github\.com\/([^/]+\/[^/]+)/;
+const YOUTUBE_REGEX = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
 
-export async function fetchContentFromUrl(url: string): Promise<{ title: string; content: string }> {
+export function isYouTubeUrl(url: string): boolean {
+  return YOUTUBE_REGEX.test(url);
+}
+
+export function extractYouTubeId(url: string): string | null {
+  const match = url.match(YOUTUBE_REGEX);
+  return match ? match[1] : null;
+}
+
+export interface YouTubeInfo {
+  title: string;
+  author: string;
+  thumbnail: string;
+  videoId: string;
+  transcript: string;
+}
+
+export async function fetchYouTubeInfo(url: string): Promise<YouTubeInfo> {
+  const videoId = extractYouTubeId(url);
+  if (!videoId) throw new Error('Invalid YouTube URL');
+
+  // Fetch video info via oEmbed
+  const oembedRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+  if (!oembedRes.ok) throw new Error(`YouTube oEmbed error: ${oembedRes.status}`);
+  const oembed = await oembedRes.json() as { title: string; author_name: string; thumbnail_url: string };
+
+  // Fetch transcript
+  let transcript: string;
+  try {
+    const items = await YoutubeTranscript.fetchTranscript(videoId);
+    transcript = items.map(item => {
+      const mins = Math.floor(item.offset / 60000);
+      const secs = Math.floor((item.offset % 60000) / 1000);
+      const ts = `${mins}:${secs.toString().padStart(2, '0')}`;
+      return `[${ts}] ${item.text}`;
+    }).join('\n');
+  } catch (err) {
+    transcript = 'Transcript not available for this video.';
+  }
+
+  return {
+    title: oembed.title,
+    author: oembed.author_name,
+    thumbnail: oembed.thumbnail_url,
+    videoId,
+    transcript,
+  };
+}
+
+export async function fetchContentFromUrl(url: string): Promise<{ title: string; content: string; thumbnail?: string }> {
+  // YouTube: fetch transcript
+  if (isYouTubeUrl(url)) {
+    const info = await fetchYouTubeInfo(url);
+    return {
+      title: info.title,
+      content: `**Channel:** ${info.author}\n\n## Transcript\n\n${info.transcript}`,
+      thumbnail: info.thumbnail,
+    };
+  }
+
   // GitHub: fetch README
   const githubMatch = url.match(GITHUB_REPO_REGEX);
   if (githubMatch) {
