@@ -318,6 +318,19 @@ app.patch('/api/articles/:id/title', requireApiKey, async (req: Request, res: Re
   }
 });
 
+// POST /api/articles/:id/save-summary — save pre-generated summary
+app.post('/api/articles/:id/save-summary', requireApiKey, async (req: Request, res: Response) => {
+  try {
+    const { summary } = req.body as { summary: string };
+    if (!summary) return res.status(400).json({ error: 'Summary required' });
+    await updateAiSummary(Number(req.params.id), summary);
+    res.json({ success: true });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: message });
+  }
+});
+
 // POST /api/articles/:id/bookmark — toggle bookmark
 app.post('/api/articles/:id/bookmark', requireApiKey, async (req: Request, res: Response) => {
   try {

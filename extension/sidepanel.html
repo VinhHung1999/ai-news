@@ -13,9 +13,8 @@
       flex-direction: column;
     }
 
-    /* Header */
     .header {
-      padding: 12px 16px;
+      padding: 10px 14px;
       border-bottom: 1px solid #1f1f1f;
       display: flex;
       align-items: center;
@@ -23,33 +22,54 @@
       flex-shrink: 0;
     }
     .header .logo {
-      width: 24px; height: 24px;
+      width: 22px; height: 22px;
       background: #10b981; border-radius: 4px;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 800; color: #000; font-size: 11px;
+      font-weight: 800; color: #000; font-size: 10px;
     }
-    .header span { color: #10b981; font-weight: 700; font-size: 13px; }
+    .header .brand { color: #10b981; font-weight: 700; font-size: 13px; flex: 1; }
+    .header .open-dash {
+      font-size: 11px; color: #888; text-decoration: none;
+      border: 1px solid #1f1f1f; padding: 3px 8px; border-radius: 4px;
+    }
+    .header .open-dash:hover { color: #10b981; border-color: #10b981; }
 
-    /* Video Info */
-    .video-info {
-      padding: 16px;
+    /* Settings bar */
+    .settings-bar {
+      padding: 8px 14px;
+      border-bottom: 1px solid #1f1f1f;
+      display: none;
+      flex-shrink: 0;
+    }
+    .settings-bar.visible { display: flex; gap: 6px; align-items: center; }
+    .settings-bar input {
+      flex: 1; padding: 5px 8px; background: #111; border: 1px solid #1f1f1f;
+      border-radius: 4px; color: #e0e0e0; font-size: 11px; font-family: monospace; outline: none;
+    }
+    .settings-bar input:focus { border-color: #10b981; }
+    .settings-bar button {
+      padding: 5px 10px; background: #10b981; color: #000; border: none;
+      border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;
+    }
+    .key-hint { font-size: 10px; color: #10b981; cursor: pointer; padding: 2px 6px; }
+
+    /* Page Info */
+    .page-info {
+      padding: 12px 14px;
       border-bottom: 1px solid #1f1f1f;
       flex-shrink: 0;
     }
-    .video-info img {
-      width: 100%; border-radius: 6px; margin-bottom: 10px;
+    .page-info img {
+      width: 100%; border-radius: 6px; margin-bottom: 8px; display: none;
     }
-    .video-title {
-      font-size: 14px; font-weight: 600; line-height: 1.4; margin-bottom: 4px;
-    }
-    .video-author {
-      font-size: 12px; color: #888;
-    }
+    .page-info img.visible { display: block; }
+    .page-title { font-size: 14px; font-weight: 600; line-height: 1.4; margin-bottom: 2px; }
+    .page-meta { font-size: 11px; color: #888; }
 
     /* Actions */
     .actions {
-      display: flex; gap: 8px;
-      padding: 12px 16px;
+      display: flex; gap: 6px;
+      padding: 10px 14px;
       border-bottom: 1px solid #1f1f1f;
       flex-shrink: 0;
     }
@@ -58,105 +78,74 @@
       font-size: 12px; font-weight: 600; cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 4px;
     }
-    .btn-summarize {
-      background: #10b981; color: #000;
-    }
+    .btn-summarize { background: #10b981; color: #000; }
     .btn-summarize:hover { background: #0fa874; }
     .btn-summarize:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-save {
-      background: transparent; color: #10b981; border: 1px solid #1f1f1f !important;
-    }
+    .btn-save { background: transparent; color: #10b981; border: 1px solid #1f1f1f !important; }
     .btn-save:hover { border-color: #10b981 !important; }
     .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-saved {
-      background: #10b981; color: #000; border: none !important;
-    }
+    .btn-saved { background: #10b981; color: #000; border: none !important; }
 
     /* Summary */
     .summary-section {
-      padding: 12px 16px;
+      padding: 10px 14px;
       border-bottom: 1px solid #1f1f1f;
       display: none;
       flex-shrink: 0;
-      max-height: 200px;
+      max-height: 250px;
       overflow-y: auto;
     }
     .summary-section.visible { display: block; }
-    .summary-label {
-      font-size: 11px; color: #10b981; font-weight: 700;
-      margin-bottom: 8px; text-transform: uppercase;
-    }
-    .summary-content {
-      font-size: 13px; line-height: 1.6; color: #e0e0e0;
-    }
-    .summary-content ul { padding-left: 16px; }
-    .summary-content li { margin: 4px 0; }
+    .summary-label { font-size: 11px; color: #10b981; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; }
+    .summary-content { font-size: 13px; line-height: 1.6; }
+    .summary-content strong { color: #10b981; }
 
-    /* Transcript */
-    .transcript-section {
-      flex: 1; overflow-y: auto; padding: 12px 16px;
+    /* Content */
+    .content-section { flex: 1; overflow-y: auto; padding: 10px 14px; }
+    .content-label {
+      font-size: 11px; color: #888; font-weight: 700; margin-bottom: 6px;
+      text-transform: uppercase; position: sticky; top: 0; background: #0a0a0a; padding: 4px 0;
     }
-    .transcript-label {
-      font-size: 11px; color: #888; font-weight: 700;
-      margin-bottom: 8px; text-transform: uppercase;
-      position: sticky; top: 0; background: #0a0a0a; padding: 4px 0;
-    }
-    .transcript-line {
-      font-size: 12px; line-height: 1.7; color: #ccc; margin-bottom: 2px;
-    }
-    .transcript-line .ts {
-      color: #10b981; font-size: 11px; font-weight: 600; margin-right: 6px;
-      cursor: pointer;
-    }
-    .transcript-line .ts:hover { text-decoration: underline; }
-
-    /* Loading */
-    .loading {
-      padding: 24px 16px; text-align: center; color: #10b981; font-size: 13px;
-    }
-    .spinner {
-      display: inline-block; width: 16px; height: 16px;
-      border: 2px solid #1f1f1f; border-top: 2px solid #10b981;
-      border-radius: 50%; animation: spin 0.8s linear infinite;
-      vertical-align: middle; margin-right: 6px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Not YouTube */
-    .not-youtube {
-      padding: 32px 16px; text-align: center; color: #888; font-size: 13px;
-    }
-    .not-youtube a { color: #10b981; }
+    .content-body { font-size: 12px; line-height: 1.7; color: #ccc; }
+    .content-body .ts { color: #10b981; font-size: 11px; font-weight: 600; margin-right: 4px; }
 
     /* Status */
-    .status {
-      font-size: 11px; text-align: center; padding: 6px;
-      display: none;
-    }
+    .status { font-size: 11px; text-align: center; padding: 6px; display: none; flex-shrink: 0; }
     .status.success { color: #10b981; background: rgba(16,185,129,0.1); display: block; }
     .status.error { color: #ef4444; background: rgba(239,68,68,0.1); display: block; }
+
+    .loading { padding: 20px 14px; text-align: center; color: #10b981; font-size: 13px; }
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid #1f1f1f; border-top: 2px solid #10b981;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+      vertical-align: middle; margin-right: 4px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
   <div class="header">
     <div class="logo">AI</div>
-    <span>BuHu · YouTube</span>
+    <span class="brand">BuHu Assistant</span>
+    <span class="key-hint" id="key-toggle">🔑</span>
+    <a class="open-dash" href="https://ai-news.hungphu.work" target="_blank">Dashboard</a>
+  </div>
+
+  <div class="settings-bar" id="settings-bar">
+    <input type="password" id="api-key-input" placeholder="API Key..." />
+    <button id="save-key-btn">Save</button>
   </div>
 
   <div id="loading" class="loading" style="display:none">
-    <span class="spinner"></span> Loading transcript...
+    <span class="spinner"></span> Loading content...
   </div>
 
-  <div id="not-youtube" class="not-youtube" style="display:none">
-    <p>Navigate to a YouTube video to see the transcript.</p>
-    <p style="margin-top:8px"><a href="https://ai-news.hungphu.work" target="_blank">Open Dashboard →</a></p>
-  </div>
-
-  <div id="content" style="display:none">
-    <div class="video-info">
-      <img id="thumbnail" src="" alt="Video thumbnail" />
-      <div class="video-title" id="video-title"></div>
-      <div class="video-author" id="video-author"></div>
+  <div id="content-wrapper" style="display:none">
+    <div class="page-info">
+      <img id="thumbnail" src="" alt="" />
+      <div class="page-title" id="page-title"></div>
+      <div class="page-meta" id="page-meta"></div>
     </div>
 
     <div class="actions">
@@ -174,9 +163,9 @@
       <div class="summary-content" id="summary-content"></div>
     </div>
 
-    <div class="transcript-section">
-      <div class="transcript-label">Transcript</div>
-      <div id="transcript"></div>
+    <div class="content-section">
+      <div class="content-label" id="content-label">Content</div>
+      <div class="content-body" id="content-body"></div>
     </div>
   </div>
 
