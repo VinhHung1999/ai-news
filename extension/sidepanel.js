@@ -150,8 +150,8 @@ document.getElementById('summarize-btn').addEventListener('click', async () => {
   const btn = document.getElementById('summarize-btn');
   const spinner = document.getElementById('sum-spinner');
   btn.disabled = true;
-  spinner.style.display = 'inline-block';
-  btn.lastChild.textContent = ' Summarizing...';
+  if (spinner) spinner.style.display = 'inline-block';
+  btn.innerHTML = '<span class="spinner" id="sum-spinner"></span> Summarizing...';
 
   try {
     const res = await fetch(`${API_BASE}/api/youtube/summarize`, {
@@ -169,13 +169,11 @@ document.getElementById('summarize-btn').addEventListener('click', async () => {
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\n/g, '<br>');
     document.getElementById('summary-section').classList.add('visible');
-    btn.lastChild.textContent = ' ✓ Done';
+    btn.innerHTML = '✓ Done';
   } catch (err) {
     showStatus(`Error: ${err.message}`, 'error');
     btn.disabled = false;
-    btn.lastChild.textContent = ' Summarize';
-  } finally {
-    spinner.style.display = 'none';
+    btn.innerHTML = '✦ Summarize';
   }
 });
 
