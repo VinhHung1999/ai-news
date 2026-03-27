@@ -147,7 +147,7 @@ app.get('/api/articles/:id', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/articles/:id/fetch-content — fetch full content via Jina Reader
+// POST /api/articles/:id/fetch-content — fetch full content via Defuddle
 app.post('/api/articles/:id/fetch-content', async (req: Request, res: Response) => {
   try {
     const article = await getArticleById(Number(req.params.id));
@@ -171,12 +171,13 @@ app.post('/api/articles/:id/fetch-content', async (req: Request, res: Response) 
         return res.status(503).json({ error: `GitHub API unavailable (${readmeRes.status}). Try again later.`, retryable: true });
       }
     } else {
-      // Other sources: fetch via Jina Reader
-      const jinaRes = await fetch(`https://r.jina.ai/${article.url}`, {
-        headers: { 'Accept': 'text/markdown', 'User-Agent': 'AI-News-Hacker-Dashboard' }
-      });
-      if (!jinaRes.ok) throw new Error(`Jina Reader error: ${jinaRes.status}`);
-      markdown = await jinaRes.text();
+      // Other sources: fetch via Defuddle
+      const defuddleRes = await fetch(`https://defuddle.md/${article.url}`);
+      if (!defuddleRes.ok) throw new Error(`Defuddle error: ${defuddleRes.status}`);
+      const raw = await defuddleRes.text();
+      // Strip YAML frontmatter, keep body only
+      const fmMatch = raw.match(/^---\n[\s\S]*?\n---\n([\s\S]*)$/);
+      markdown = fmMatch ? fmMatch[1].trim() : raw;
     }
 
     await updateFullContent(article.id, markdown);

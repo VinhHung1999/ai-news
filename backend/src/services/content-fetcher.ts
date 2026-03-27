@@ -99,50 +99,26 @@ export async function fetchContentFromUrl(url: string): Promise<{ title: string;
     return { title, content: description ? `> ${description}\n\n${content}` : content };
   }
 
-  // Other URLs: Jina Reader
-  const jinaRes = await fetch(`https://r.jina.ai/${url}`, {
-    headers: { 'Accept': 'text/markdown', 'User-Agent': 'AI-News-Hacker-Dashboard' }
-  });
-  if (!jinaRes.ok) throw new Error(`Failed to fetch content from ${url}`);
-  const markdown = cleanMarkdown(await jinaRes.text());
+  // Other URLs: Defuddle
+  const defuddleRes = await fetch(`https://defuddle.md/${url}`);
+  if (!defuddleRes.ok) throw new Error(`Failed to fetch content from ${url}`);
+  const raw = await defuddleRes.text();
 
-  // Extract title from first heading or Jina title line
-  const titleMatch = markdown.match(/^(?:Title:\s*(.+)|#\s+(.+))/m);
-  const title = titleMatch?.[1] || titleMatch?.[2] || new URL(url).hostname;
+  // Parse YAML frontmatter and extract body
+  const frontmatterMatch = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  let title = new URL(url).hostname;
+  let content = raw;
 
-  return { title, content: markdown };
-}
-
-function cleanMarkdown(md: string): string {
-  const lines = md.split('\n');
-  const cleaned: string[] = [];
-  let skipNav = false;
-
-  for (const line of lines) {
-    // Skip navigation-like patterns
-    if (/^(Meet Claude|Login|Contact sales|Try Claude|Products|Features|Models|Platform|Solutions|Pricing|Resources)\s*$/.test(line.trim())) {
-      skipNav = true;
-      continue;
-    }
-    // Skip lines that are just repeated link lists (nav/footer)
-    if (/^\*\s+\[.*?\]\(https?:\/\/(claude\.com|www\.anthropic\.com)\/(pricing|solutions|platform|skills|plugins|connectors|community|resources|claude-for-)/.test(line.trim())) {
-      continue;
-    }
-    // Skip "Contact sales" / "Try Claude" repeated buttons
-    if (/^(Contact sales|Try Claude)\s*(Contact sales|Try Claude)*\s*$/.test(line.trim())) {
-      continue;
-    }
-    // Resume after nav section ends (content starts with heading or paragraph)
-    if (skipNav && (line.startsWith('# ') || (line.trim().length > 80))) {
-      skipNav = false;
-    }
-    if (!skipNav) {
-      cleaned.push(line);
+  if (frontmatterMatch) {
+    const frontmatter = frontmatterMatch[1];
+    content = frontmatterMatch[2].trim();
+    const titleMatch = frontmatter.match(/^title:\s*"?(.+?)"?\s*$/m);
+    if (titleMatch) {
+      title = titleMatch[1];
     }
   }
 
-  // Remove consecutive empty lines (max 2)
-  return cleaned.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  return { title, content };
 }
 
 export async function extractContentFromFile(buffer: Buffer, filename: string): Promise<{ title: string; content: string }> {
