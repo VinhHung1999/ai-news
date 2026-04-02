@@ -17,7 +17,7 @@ interface BuHuChatProps {
 }
 
 const BuHuChat = memo(({ articleId, onClose }: BuHuChatProps) => {
-  const [mode, setMode] = useState<AiMode>('deep-tutor');
+  const [mode, setMode] = useState<AiMode>('buhu');
 
   // BuHu state
   const [summary, setSummary] = useState<string | null>(null);
@@ -123,16 +123,16 @@ const BuHuChat = memo(({ articleId, onClose }: BuHuChatProps) => {
         {/* Mode Switcher */}
         <div className="ai-mode-switcher">
           <button
-            className={`ai-mode-btn ${mode === 'deep-tutor' ? 'ai-mode-btn-active' : ''}`}
-            onClick={() => setMode('deep-tutor')}
-          >
-            <GraduationCap size={14} /> Deep Tutor
-          </button>
-          <button
             className={`ai-mode-btn ${mode === 'buhu' ? 'ai-mode-btn-active' : ''}`}
             onClick={() => setMode('buhu')}
           >
             <Bot size={14} /> BuHu
+          </button>
+          <button
+            className={`ai-mode-btn ${mode === 'deep-tutor' ? 'ai-mode-btn-active' : ''}`}
+            onClick={() => setMode('deep-tutor')}
+          >
+            <GraduationCap size={14} /> Deep Tutor
           </button>
         </div>
         <button onClick={onClose} className="buhu-drawer-close">
