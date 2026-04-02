@@ -6,7 +6,7 @@ let tutorChapters = [];
 let tutorStarted = false;
 let savedArticleId = null;
 
-const CHAPTER_INIT_MSG = 'List the main chapters/sections of this article as a short numbered list. Just the section titles, nothing else.';
+const CHAPTER_INIT_MSG = 'Read the entire article, then design 3-5 learning chapters that guide me through understanding it deeply. Do not just list existing sections — synthesize a pedagogical outline. Output only the numbered list of chapter titles.';
 
 function parseChapters(text) {
   const chapters = [];

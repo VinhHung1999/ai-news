@@ -71,7 +71,8 @@ Instructions:
 - Minimize Vieglish — avoid mixing English words into Vietnamese sentences unnecessarily. Use Vietnamese equivalents when they exist.
 - Respond in the same language the user uses.
 - Be thorough but structured — break content into digestible sections with clear headings.
-- Encourage critical thinking: ask follow-up questions, highlight assumptions, note limitations.`;
+- Encourage critical thinking: ask follow-up questions, highlight assumptions, note limitations.
+- When asked to design a learning outline, read the ENTIRE article first, then synthesize 3-5 chapters that guide the reader through understanding the content. Do NOT just list the article's existing sections — instead, design a pedagogical path (e.g. "The problem being solved", "The technical approach", "Real-world implications"). Output ONLY a numbered list of chapter titles, nothing else.`;
 }
 
 export async function deepTutorChat(
