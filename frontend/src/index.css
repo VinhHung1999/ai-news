@@ -525,51 +525,58 @@ html, body {
   overflow-y: auto;
   padding: 2rem;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .article-detail-body {
   padding: 2.5rem;
 }
 
-/* === BuHu Drawer === */
-.buhu-drawer {
-  width: 0;
-  overflow: hidden;
-  background: var(--bg-secondary);
-  border-left: 1px solid var(--border-default);
+/* === Article Tabs === */
+.article-tabs {
   display: flex;
-  flex-direction: column;
-  transition: width 0.25s ease;
-}
-
-.buhu-drawer-open {
-  width: 420px;
-}
-
-.buhu-drawer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border-default);
-  color: var(--text-primary);
   flex-shrink: 0;
 }
 
-.buhu-drawer-close {
+.article-tab {
+  flex: 0 0 auto;
+  padding: 0.75rem 1.5rem;
   background: none;
   border: none;
+  border-bottom: 2px solid transparent;
   color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
-  padding: 0.25rem;
-  display: flex;
-  align-items: center;
-}
-.buhu-drawer-close:hover {
-  color: var(--accent-brand);
+  transition: color 0.2s, border-color 0.2s;
 }
 
-.buhu-drawer-messages {
+.article-tab:hover {
+  color: var(--text-primary);
+}
+
+.article-tab-active {
+  color: var(--accent-brand);
+  border-bottom-color: var(--accent-brand);
+}
+
+.article-tab-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.article-ai-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* === BuHu Chat === */
+.buhu-chat-messages {
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
@@ -605,7 +612,7 @@ html, body {
   font-size: 0.88rem;
 }
 
-.buhu-drawer-input {
+.buhu-chat-input {
   display: flex;
   gap: 0.5rem;
   padding: 1rem 1.25rem;
@@ -613,7 +620,7 @@ html, body {
   flex-shrink: 0;
 }
 
-.buhu-drawer-input input {
+.buhu-chat-input input {
   flex: 1;
   background: var(--bg-color);
   border: 1px solid var(--border-default);
@@ -625,11 +632,11 @@ html, body {
   outline: none;
 }
 
-.buhu-drawer-input input:focus {
+.buhu-chat-input input:focus {
   border-color: var(--accent-brand);
 }
 
-.buhu-drawer-input button {
+.buhu-chat-input button {
   background: var(--accent-brand);
   border: none;
   color: #000;
@@ -640,33 +647,9 @@ html, body {
   align-items: center;
 }
 
-.buhu-drawer-input button:disabled {
+.buhu-chat-input button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-/* Floating BuHu button */
-.buhu-fab {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--accent-brand);
-  color: #000;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
-  z-index: 200;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.buhu-fab:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.6);
 }
 
 /* === Modal === */
@@ -894,19 +877,5 @@ html, body {
 
   .article-detail-body {
     padding: 1.5rem;
-  }
-
-  .buhu-drawer {
-    position: fixed;
-    top: 0;
-    right: 0;
-    height: 100vh;
-    width: 0;
-    z-index: 100;
-    border-left: none;
-  }
-
-  .buhu-drawer-open {
-    width: 100%;
   }
 }

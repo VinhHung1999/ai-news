@@ -1,6 +1,6 @@
 import { apiFetch } from '../api';
 import { useState, useEffect, useRef, memo } from 'react';
-import { Send, Bot, PanelRightClose, Loader2 } from 'lucide-react';
+import { Send, Bot, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 
@@ -11,10 +11,9 @@ interface ChatMessage {
 
 interface BuHuChatProps {
   articleId: number;
-  onClose: () => void;
 }
 
-const BuHuChat = memo(({ articleId, onClose }: BuHuChatProps) => {
+const BuHuChat = memo(({ articleId }: BuHuChatProps) => {
   const [summary, setSummary] = useState<string | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -72,17 +71,7 @@ const BuHuChat = memo(({ articleId, onClose }: BuHuChatProps) => {
 
   return (
     <>
-      <div className="buhu-drawer-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Bot size={20} color="var(--accent-brand)" />
-          <span style={{ fontWeight: 700 }}>BuHu Assistant</span>
-        </div>
-        <button onClick={onClose} className="buhu-drawer-close">
-          <PanelRightClose size={18} />
-        </button>
-      </div>
-
-      <div className="buhu-drawer-messages">
+      <div className="buhu-chat-messages">
         {loadingSummary ? (
           <div className="buhu-msg buhu-msg-assistant">
             <Loader2 size={14} className="spin" /> Summarizing this article...
@@ -117,7 +106,7 @@ const BuHuChat = memo(({ articleId, onClose }: BuHuChatProps) => {
         <div ref={chatEndRef} />
       </div>
 
-      <div className="buhu-drawer-input">
+      <div className="buhu-chat-input">
         <input
           type="text"
           value={chatInput}
