@@ -533,6 +533,41 @@ html, body {
   padding: 2.5rem;
 }
 
+/* === Article Top Bar === */
+.article-top-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.article-top-bar-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.article-top-bar-title-text {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.article-top-bar-title-text:hover {
+  color: var(--accent-brand);
+}
+
 /* === Article Tabs === */
 .article-tabs {
   display: flex;

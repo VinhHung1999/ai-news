@@ -48,15 +48,49 @@ const ArticleDetail = ({ article, onBack }: ArticleDetailProps) => {
     <div className="article-detail-layout">
       <div className="article-detail-main">
         {/* Top Bar */}
-        <div className="feed-header" style={{ marginBottom: '1rem', borderBottom: 'none' }}>
-          <button className="action-btn" onClick={onBack} style={{ fontSize: '1rem', padding: '0.5rem 1rem', border: '1px solid var(--border-default)', transition: 'all 0.2s', borderRadius: '4px' }}>
-            <ArrowLeft size={18} /> ./cd ..
-          </button>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div className="article-top-bar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+            <button className="action-btn" onClick={onBack} style={{ fontSize: '1rem', padding: '0.5rem 1rem', border: '1px solid var(--border-default)', transition: 'all 0.2s', borderRadius: '4px' }}>
+              <ArrowLeft size={18} /> ./cd ..
+            </button>
             <a href={article.url} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ textDecoration: 'none', fontSize: '0.85rem', padding: '0.4rem 0.8rem' }} onClick={(e) => e.stopPropagation()}>
               <ExternalLink size={14} /> Original
             </a>
-            <button className={bookmarked ? 'btn-primary' : 'btn-secondary'} style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }} onClick={async () => {
+          </div>
+
+          <div className="article-top-bar-title">
+            {editingTitle ? (
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flex: 1 }}>
+                <input
+                  value={titleDraft}
+                  onChange={e => setTitleDraft(e.target.value)}
+                  onKeyDown={async e => {
+                    if (e.key === 'Enter') {
+                      const res = await apiFetch(`/api/articles/${article.id}/title`, {
+                        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title: titleDraft }),
+                      });
+                      if (res.ok) { setTitle(titleDraft); setEditingTitle(false); }
+                    } else if (e.key === 'Escape') { setTitleDraft(title); setEditingTitle(false); }
+                  }}
+                  autoFocus
+                  style={{ flex: 1, background: 'var(--bg-color)', border: '1px solid var(--accent-brand)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: '0.95rem', fontWeight: 700, padding: '0.4rem 0.6rem', borderRadius: '4px', outline: 'none' }}
+                />
+                <button className="btn-primary" style={{ padding: '0.4rem' }} onClick={async () => {
+                  const res = await apiFetch(`/api/articles/${article.id}/title`, {
+                    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: titleDraft }),
+                  });
+                  if (res.ok) { setTitle(titleDraft); setEditingTitle(false); }
+                }}><Check size={16} /></button>
+              </div>
+            ) : (
+              <span className="article-top-bar-title-text" onClick={() => setEditingTitle(true)}>
+                &gt; {title} <Pencil size={14} style={{ opacity: 0.3, flexShrink: 0 }} />
+              </span>
+            )}
+
+            <button className={bookmarked ? 'btn-primary' : 'btn-secondary'} style={{ fontSize: '0.85rem', padding: '0.4rem 0.6rem', flexShrink: 0 }} onClick={async () => {
               try {
                 const res = await apiFetch(`/api/articles/${article.id}/bookmark`, { method: 'POST' });
                 if (res.ok) { const data = await res.json(); setBookmarked(data.bookmarked); }
@@ -105,37 +139,6 @@ const ArticleDetail = ({ article, onBack }: ArticleDetailProps) => {
                   <span className="source-tag" style={{ padding: '0.2rem 0.6rem', fontSize: '0.9rem' }}>[{article.source}]</span>
                   <span className="time-tag">{article.time}</span>
                 </div>
-
-                {editingTitle ? (
-                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
-                    <input
-                      value={titleDraft}
-                      onChange={e => setTitleDraft(e.target.value)}
-                      onKeyDown={async e => {
-                        if (e.key === 'Enter') {
-                          const res = await apiFetch(`/api/articles/${article.id}/title`, {
-                            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ title: titleDraft }),
-                          });
-                          if (res.ok) { setTitle(titleDraft); setEditingTitle(false); }
-                        } else if (e.key === 'Escape') { setTitleDraft(title); setEditingTitle(false); }
-                      }}
-                      autoFocus
-                      style={{ flex: 1, background: 'var(--bg-color)', border: '1px solid var(--accent-brand)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: '1.5rem', fontWeight: 700, padding: '0.5rem', borderRadius: '4px', outline: 'none' }}
-                    />
-                    <button className="btn-primary" style={{ padding: '0.5rem' }} onClick={async () => {
-                      const res = await apiFetch(`/api/articles/${article.id}/title`, {
-                        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ title: titleDraft }),
-                      });
-                      if (res.ok) { setTitle(titleDraft); setEditingTitle(false); }
-                    }}><Check size={18} /></button>
-                  </div>
-                ) : (
-                  <h1 className="title" style={{ fontSize: '2rem', marginBottom: '1rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => setEditingTitle(true)}>
-                    &gt; {title} <Pencil size={16} style={{ opacity: 0.3 }} />
-                  </h1>
-                )}
 
                 <div className="card-tags" style={{ marginBottom: '1.5rem' }}>
                   {article.tags?.map((t: string) => <span key={t} className="badge" style={{ fontSize: '0.9rem' }}>--{t.toLowerCase()}</span>)}
