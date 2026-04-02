@@ -271,7 +271,6 @@ async function loadPage() {
       if (result.thumbnail) { thumbEl.src = result.thumbnail; thumbEl.style.display = 'block'; }
       document.getElementById('page-title').textContent = pageData.title;
       document.getElementById('page-meta').textContent = `🎬 ${result.author} · YouTube`;
-      document.getElementById('content-label').textContent = 'Transcript';
 
       const bodyEl = document.getElementById('content-body');
       bodyEl.innerHTML = '';
@@ -303,7 +302,6 @@ async function loadPage() {
       document.getElementById('thumbnail').style.display = 'none';
       document.getElementById('page-title').textContent = title;
       document.getElementById('page-meta').textContent = new URL(tab.url).hostname;
-      document.getElementById('content-label').textContent = 'Content';
       document.getElementById('content-body').innerText = markdown;
     }
 
