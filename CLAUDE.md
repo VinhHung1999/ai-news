@@ -41,10 +41,12 @@ npm run lint             # eslint
 
 ### Deploy
 ```bash
-deploy up ai-news-api --env prod    # build + deploy via PM2
-deploy logs ai-news-api --env prod  # view logs
+./scripts/deploy-prod.sh             # full deploy (build + sync frontend + PM2 restart)
+deploy logs ai-news-api --env prod   # view logs
 deploy rollback ai-news-api --env prod
 ```
+
+> **Note:** Always use `scripts/deploy-prod.sh` instead of `deploy up` directly. The deploy CLI does not sync `frontend/dist` to the deploy folder — the script handles this.
 
 ## Ports & Tunnel
 
@@ -70,6 +72,13 @@ deploy rollback ai-news-api --env prod
 - BuHu AI uses xAI grok-4-1-fast-non-reasoning with shared system prompt for cache reuse
 - API key auth on write endpoints (X-API-Key header)
 - Frontend and API served from same Express server in production
+
+## Tmux Team Workflow
+
+Team workflow and sprint process: [`docs/tmux/ai-news/workflow.md`](docs/tmux/ai-news/workflow.md)
+- 2-person team: PO + DEV
+- Backlog/board managed via MCP tools (`list_backlog`, `get_board`, `get_my_tasks`, `update_task_status`, etc.)
+- DEV must pull tasks (`get_my_tasks`) and update status throughout sprint execution
 
 ## Project Memory
 
