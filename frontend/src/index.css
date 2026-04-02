@@ -525,98 +525,54 @@ html, body {
   overflow-y: auto;
   padding: 2rem;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 .article-detail-body {
   padding: 2.5rem;
 }
 
-/* === Article Top Bar === */
-.article-top-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-
-.article-top-bar-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.article-top-bar-title-text {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+/* === BuHu Drawer === */
+.buhu-drawer {
+  width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
-
-.article-top-bar-title-text:hover {
-  color: var(--accent-brand);
-}
-
-/* === Article Tabs === */
-.article-tabs {
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-default);
   display: flex;
+  flex-direction: column;
+  transition: width 0.25s ease;
+}
+
+.buhu-drawer-open {
+  width: 420px;
+}
+
+.buhu-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
   border-bottom: 1px solid var(--border-default);
+  color: var(--text-primary);
   flex-shrink: 0;
 }
 
-.article-tab {
-  flex: 0 0 auto;
-  padding: 0.75rem 1.5rem;
+.buhu-drawer-close {
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
   color: var(--text-muted);
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 600;
   cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
-}
-
-.article-tab:hover {
-  color: var(--text-primary);
-}
-
-.article-tab-active {
-  color: var(--accent-brand);
-  border-bottom-color: var(--accent-brand);
-}
-
-.article-tab-content {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-}
-
-.article-ai-tab {
+  padding: 0.25rem;
   display: flex;
-  flex-direction: column;
-  height: 100%;
+  align-items: center;
+}
+.buhu-drawer-close:hover {
+  color: var(--accent-brand);
 }
 
 /* === AI Mode Switcher === */
 .ai-mode-switcher {
   display: flex;
   gap: 0.25rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border-default);
-  flex-shrink: 0;
 }
 
 .ai-mode-btn {
@@ -646,8 +602,7 @@ html, body {
   background: rgba(16, 185, 129, 0.08);
 }
 
-/* === BuHu Chat === */
-.buhu-chat-messages {
+.buhu-drawer-messages {
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
@@ -683,7 +638,7 @@ html, body {
   font-size: 0.88rem;
 }
 
-.buhu-chat-input {
+.buhu-drawer-input {
   display: flex;
   gap: 0.5rem;
   padding: 1rem 1.25rem;
@@ -691,7 +646,7 @@ html, body {
   flex-shrink: 0;
 }
 
-.buhu-chat-input input {
+.buhu-drawer-input input {
   flex: 1;
   background: var(--bg-color);
   border: 1px solid var(--border-default);
@@ -703,11 +658,11 @@ html, body {
   outline: none;
 }
 
-.buhu-chat-input input:focus {
+.buhu-drawer-input input:focus {
   border-color: var(--accent-brand);
 }
 
-.buhu-chat-input button {
+.buhu-drawer-input button {
   background: var(--accent-brand);
   border: none;
   color: #000;
@@ -718,9 +673,33 @@ html, body {
   align-items: center;
 }
 
-.buhu-chat-input button:disabled {
+.buhu-drawer-input button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Floating toggle button */
+.buhu-fab {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent-brand);
+  color: #000;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+  z-index: 200;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.buhu-fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.6);
 }
 
 /* === Modal === */
@@ -948,5 +927,19 @@ html, body {
 
   .article-detail-body {
     padding: 1.5rem;
+  }
+
+  .buhu-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: 0;
+    z-index: 100;
+    border-left: none;
+  }
+
+  .buhu-drawer-open {
+    width: 100%;
   }
 }

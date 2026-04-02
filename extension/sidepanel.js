@@ -1,6 +1,9 @@
 const API_BASE = 'https://api-ainews.hungphu.work';
 
 let pageData = null; // { url, title, content, thumbnail, isYouTube, summary }
+let tutorMessages = []; // Deep Tutor chat history
+let tutorStarted = false;
+let savedArticleId = null; // Article ID after saving
 
 async function getApiKey() {
   const stored = await chrome.storage.local.get('apiKey');
@@ -29,6 +32,159 @@ document.getElementById('save-key-btn').addEventListener('click', async () => {
   }
 })();
 
+// Tab switching
+document.getElementById('tab-content-btn').addEventListener('click', () => switchTab('content'));
+document.getElementById('tab-tutor-btn').addEventListener('click', () => switchTab('tutor'));
+
+function switchTab(tab) {
+  document.getElementById('tab-content-btn').classList.toggle('active', tab === 'content');
+  document.getElementById('tab-tutor-btn').classList.toggle('active', tab === 'tutor');
+  document.getElementById('tab-content').classList.toggle('active', tab === 'content');
+  document.getElementById('tab-tutor').classList.toggle('active', tab === 'tutor');
+
+  // Auto-start Deep Tutor on first switch
+  if (tab === 'tutor' && !tutorStarted && pageData?.content) {
+    startDeepTutor();
+  }
+}
+
+// Deep Tutor
+async function startDeepTutor() {
+  tutorStarted = true;
+  const initMsg = { role: 'user', content: 'Please provide a structured overview and outline of this article. Break it into key sections and highlight the main points I should pay attention to.' };
+  tutorMessages = [initMsg];
+  renderTutorMessages();
+  addTutorLoading();
+
+  document.getElementById('tutor-input').disabled = true;
+  document.getElementById('tutor-send-btn').disabled = true;
+
+  try {
+    // If article is saved, use article ID endpoint; otherwise use direct content
+    let reply;
+    if (savedArticleId) {
+      const res = await fetch(`${API_BASE}/api/articles/${savedArticleId}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [initMsg], mode: 'deep-tutor' }),
+      });
+      if (!res.ok) throw new Error('Deep Tutor request failed');
+      const data = await res.json();
+      reply = data.reply;
+    } else {
+      // For unsaved articles, save first to get an article ID for chat
+      const apiKey = await getApiKey();
+      if (apiKey) {
+        const saveRes = await fetch(`${API_BASE}/api/articles/add`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
+          body: JSON.stringify({ url: pageData.url }),
+        });
+        if (saveRes.ok) {
+          const saveData = await saveRes.json();
+          savedArticleId = saveData.article.id;
+          const res = await fetch(`${API_BASE}/api/articles/${savedArticleId}/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: [initMsg], mode: 'deep-tutor' }),
+          });
+          if (!res.ok) throw new Error('Deep Tutor request failed');
+          const data = await res.json();
+          reply = data.reply;
+        }
+      }
+      if (!reply) {
+        reply = 'Please save the article first or set your API key to use Deep Tutor.';
+      }
+    }
+
+    tutorMessages.push({ role: 'assistant', content: reply });
+    renderTutorMessages();
+  } catch (err) {
+    tutorMessages.push({ role: 'assistant', content: `Error: ${err.message}` });
+    renderTutorMessages();
+  } finally {
+    document.getElementById('tutor-input').disabled = false;
+    document.getElementById('tutor-send-btn').disabled = false;
+    removeTutorLoading();
+  }
+}
+
+async function sendTutorMessage() {
+  const input = document.getElementById('tutor-input');
+  const text = input.value.trim();
+  if (!text || !savedArticleId) return;
+
+  const userMsg = { role: 'user', content: text };
+  tutorMessages.push(userMsg);
+  input.value = '';
+  renderTutorMessages();
+  addTutorLoading();
+
+  input.disabled = true;
+  document.getElementById('tutor-send-btn').disabled = true;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/articles/${savedArticleId}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: tutorMessages, mode: 'deep-tutor' }),
+    });
+    if (!res.ok) throw new Error('Chat failed');
+    const data = await res.json();
+    tutorMessages.push({ role: 'assistant', content: data.reply });
+    renderTutorMessages();
+  } catch (err) {
+    tutorMessages.push({ role: 'assistant', content: `Error: ${err.message}` });
+    renderTutorMessages();
+  } finally {
+    input.disabled = false;
+    document.getElementById('tutor-send-btn').disabled = false;
+    removeTutorLoading();
+  }
+}
+
+function renderTutorMessages() {
+  const container = document.getElementById('tutor-messages');
+  container.innerHTML = '';
+  for (const msg of tutorMessages) {
+    const div = document.createElement('div');
+    div.className = `tutor-msg tutor-msg-${msg.role}`;
+    if (msg.role === 'assistant') {
+      div.innerHTML = msg.content
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/^- /gm, '• ')
+        .replace(/^### (.+)$/gm, '<strong style="color:#10b981;font-size:13px">$1</strong>')
+        .replace(/^## (.+)$/gm, '<strong style="color:#10b981;font-size:14px">$1</strong>')
+        .replace(/\n/g, '<br>');
+    } else {
+      div.textContent = msg.content;
+    }
+    container.appendChild(div);
+  }
+  container.scrollTop = container.scrollHeight;
+}
+
+function addTutorLoading() {
+  const container = document.getElementById('tutor-messages');
+  const div = document.createElement('div');
+  div.className = 'tutor-msg tutor-msg-assistant';
+  div.id = 'tutor-loading';
+  div.innerHTML = '<span class="spinner"></span> Analyzing...';
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeTutorLoading() {
+  const el = document.getElementById('tutor-loading');
+  if (el) el.remove();
+}
+
+document.getElementById('tutor-send-btn').addEventListener('click', sendTutorMessage);
+document.getElementById('tutor-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendTutorMessage();
+});
+
 async function loadPage() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.url || tab.url.startsWith('chrome://')) {
@@ -40,6 +196,13 @@ async function loadPage() {
   document.getElementById('loading').style.display = 'block';
   document.getElementById('content-wrapper').style.display = 'none';
   document.getElementById('summary-section').classList.remove('visible');
+
+  // Reset tutor state
+  tutorMessages = [];
+  tutorStarted = false;
+  savedArticleId = null;
+  document.getElementById('tutor-messages').innerHTML = '';
+  switchTab('content');
 
   const isYouTube = tab.url.includes('youtube.com/watch') || tab.url.includes('youtu.be/');
 
@@ -203,6 +366,7 @@ document.getElementById('save-btn').addEventListener('click', async () => {
       throw new Error(data.error || 'Save failed');
     }
     const { article } = await res.json();
+    savedArticleId = article.id;
 
     // If we have a summary, save it too
     if (pageData.summary && article.id) {

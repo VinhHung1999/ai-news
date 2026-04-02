@@ -1,6 +1,6 @@
 import { apiFetch } from '../api';
 import { useState, useEffect, useRef, memo } from 'react';
-import { Send, Bot, GraduationCap, Loader2 } from 'lucide-react';
+import { Send, Bot, GraduationCap, PanelRightClose, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 
@@ -13,10 +13,11 @@ type AiMode = 'buhu' | 'deep-tutor';
 
 interface BuHuChatProps {
   articleId: number;
+  onClose: () => void;
 }
 
-const BuHuChat = memo(({ articleId }: BuHuChatProps) => {
-  const [mode, setMode] = useState<AiMode>('buhu');
+const BuHuChat = memo(({ articleId, onClose }: BuHuChatProps) => {
+  const [mode, setMode] = useState<AiMode>('deep-tutor');
 
   // BuHu state
   const [summary, setSummary] = useState<string | null>(null);
@@ -117,24 +118,30 @@ const BuHuChat = memo(({ articleId }: BuHuChatProps) => {
 
   return (
     <>
-      {/* Mode Switcher */}
-      <div className="ai-mode-switcher">
-        <button
-          className={`ai-mode-btn ${mode === 'buhu' ? 'ai-mode-btn-active' : ''}`}
-          onClick={() => setMode('buhu')}
-        >
-          <Bot size={14} /> BuHu
-        </button>
-        <button
-          className={`ai-mode-btn ${mode === 'deep-tutor' ? 'ai-mode-btn-active' : ''}`}
-          onClick={() => setMode('deep-tutor')}
-        >
-          <GraduationCap size={14} /> Deep Tutor
+      {/* Drawer Header */}
+      <div className="buhu-drawer-header">
+        {/* Mode Switcher */}
+        <div className="ai-mode-switcher">
+          <button
+            className={`ai-mode-btn ${mode === 'deep-tutor' ? 'ai-mode-btn-active' : ''}`}
+            onClick={() => setMode('deep-tutor')}
+          >
+            <GraduationCap size={14} /> Deep Tutor
+          </button>
+          <button
+            className={`ai-mode-btn ${mode === 'buhu' ? 'ai-mode-btn-active' : ''}`}
+            onClick={() => setMode('buhu')}
+          >
+            <Bot size={14} /> BuHu
+          </button>
+        </div>
+        <button onClick={onClose} className="buhu-drawer-close">
+          <PanelRightClose size={18} />
         </button>
       </div>
 
       {/* Chat Messages */}
-      <div className="buhu-chat-messages">
+      <div className="buhu-drawer-messages">
         {mode === 'buhu' && (
           <>
             {loadingSummary ? (
@@ -181,7 +188,7 @@ const BuHuChat = memo(({ articleId }: BuHuChatProps) => {
       </div>
 
       {/* Chat Input */}
-      <div className="buhu-chat-input">
+      <div className="buhu-drawer-input">
         <input
           type="text"
           value={chatInput}
