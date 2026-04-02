@@ -1,16 +1,30 @@
 const API_BASE = 'https://api-ainews.hungphu.work';
 
-let pageData = null; // { url, title, content, thumbnail, isYouTube, summary }
-let tutorMessages = []; // Deep Tutor chat history
+let pageData = null;
+let tutorMessages = [];
+let tutorChapters = [];
 let tutorStarted = false;
-let savedArticleId = null; // Article ID after saving
+let savedArticleId = null;
+
+const CHAPTER_INIT_MSG = 'List the main chapters/sections of this article as a short numbered list. Just the section titles, nothing else.';
+
+function parseChapters(text) {
+  const chapters = [];
+  for (const line of text.split('\n')) {
+    const match = line.match(/^\s*\d+[\.\)]\s*(.+)/);
+    if (match) {
+      chapters.push(match[1].replace(/\*\*/g, '').trim());
+    }
+  }
+  return chapters;
+}
 
 async function getApiKey() {
   const stored = await chrome.storage.local.get('apiKey');
   return stored.apiKey || '';
 }
 
-// API key settings toggle
+// API key settings
 document.getElementById('key-toggle').addEventListener('click', () => {
   document.getElementById('settings-bar').classList.toggle('visible');
 });
@@ -24,12 +38,9 @@ document.getElementById('save-key-btn').addEventListener('click', async () => {
   document.getElementById('settings-bar').classList.remove('visible');
 });
 
-// Init: check if key exists
 (async () => {
   const key = await getApiKey();
-  if (!key) {
-    document.getElementById('settings-bar').classList.add('visible');
-  }
+  if (!key) document.getElementById('settings-bar').classList.add('visible');
 })();
 
 // Tab switching
@@ -42,87 +53,87 @@ function switchTab(tab) {
   document.getElementById('tab-content').classList.toggle('active', tab === 'content');
   document.getElementById('tab-tutor').classList.toggle('active', tab === 'tutor');
 
-  // Auto-start Deep Tutor on first switch
   if (tab === 'tutor' && !tutorStarted && pageData?.content) {
     startDeepTutor();
   }
 }
 
-// Deep Tutor
+// Deep Tutor — chapter flow
 async function startDeepTutor() {
   tutorStarted = true;
-  const initMsg = { role: 'user', content: 'Please provide a structured overview and outline of this article. Break it into key sections and highlight the main points I should pay attention to.' };
+  const initMsg = { role: 'user', content: CHAPTER_INIT_MSG };
   tutorMessages = [initMsg];
+  tutorChapters = [];
   renderTutorMessages();
   addTutorLoading();
-
-  document.getElementById('tutor-input').disabled = true;
-  document.getElementById('tutor-send-btn').disabled = true;
+  setTutorInputEnabled(false);
 
   try {
-    // If article is saved, use article ID endpoint; otherwise use direct content
-    let reply;
-    if (savedArticleId) {
-      const res = await fetch(`${API_BASE}/api/articles/${savedArticleId}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [initMsg], mode: 'deep-tutor' }),
-      });
-      if (!res.ok) throw new Error('Deep Tutor request failed');
-      const data = await res.json();
-      reply = data.reply;
-    } else {
-      // For unsaved articles, save first to get an article ID for chat
-      const apiKey = await getApiKey();
-      if (apiKey) {
-        const saveRes = await fetch(`${API_BASE}/api/articles/add`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
-          body: JSON.stringify({ url: pageData.url }),
-        });
-        if (saveRes.ok) {
-          const saveData = await saveRes.json();
-          savedArticleId = saveData.article.id;
-          const res = await fetch(`${API_BASE}/api/articles/${savedArticleId}/chat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messages: [initMsg], mode: 'deep-tutor' }),
-          });
-          if (!res.ok) throw new Error('Deep Tutor request failed');
-          const data = await res.json();
-          reply = data.reply;
-        }
-      }
-      if (!reply) {
-        reply = 'Please save the article first or set your API key to use Deep Tutor.';
-      }
+    const articleId = await ensureArticleSaved();
+    if (!articleId) {
+      tutorMessages.push({ role: 'assistant', content: 'Please set your API key first (🔑) to use Deep Tutor.' });
+      renderTutorMessages();
+      removeTutorLoading();
+      return;
     }
 
-    tutorMessages.push({ role: 'assistant', content: reply });
+    const res = await fetch(`${API_BASE}/api/articles/${articleId}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [initMsg], mode: 'deep-tutor' }),
+    });
+    if (!res.ok) throw new Error('Deep Tutor request failed');
+    const data = await res.json();
+    tutorMessages.push({ role: 'assistant', content: data.reply });
+    tutorChapters = parseChapters(data.reply);
     renderTutorMessages();
   } catch (err) {
     tutorMessages.push({ role: 'assistant', content: `Error: ${err.message}` });
     renderTutorMessages();
   } finally {
-    document.getElementById('tutor-input').disabled = false;
-    document.getElementById('tutor-send-btn').disabled = false;
     removeTutorLoading();
+    setTutorInputEnabled(true);
   }
 }
 
-async function sendTutorMessage() {
-  const input = document.getElementById('tutor-input');
-  const text = input.value.trim();
-  if (!text || !savedArticleId) return;
+async function ensureArticleSaved() {
+  if (savedArticleId) return savedArticleId;
+  const apiKey = await getApiKey();
+  if (!apiKey) return null;
+  try {
+    const res = await fetch(`${API_BASE}/api/articles/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
+      body: JSON.stringify({ url: pageData.url }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      savedArticleId = data.article.id;
+      // Update save button
+      const btn = document.getElementById('save-btn');
+      btn.className = 'btn-save-inline saved';
+      btn.textContent = '✓ Saved';
+      return savedArticleId;
+    }
+  } catch (err) {
+    console.error('Auto-save error:', err);
+  }
+  return null;
+}
 
+async function sendTutorChapter(index, chapterName) {
+  const text = `Bắt đầu phần ${index + 1}: ${chapterName}`;
+  await sendTutorMsg(text);
+}
+
+async function sendTutorMsg(text) {
+  if (!savedArticleId) return;
   const userMsg = { role: 'user', content: text };
   tutorMessages.push(userMsg);
-  input.value = '';
+  tutorChapters = [];
   renderTutorMessages();
   addTutorLoading();
-
-  input.disabled = true;
-  document.getElementById('tutor-send-btn').disabled = true;
+  setTutorInputEnabled(false);
 
   try {
     const res = await fetch(`${API_BASE}/api/articles/${savedArticleId}/chat`, {
@@ -138,10 +149,14 @@ async function sendTutorMessage() {
     tutorMessages.push({ role: 'assistant', content: `Error: ${err.message}` });
     renderTutorMessages();
   } finally {
-    input.disabled = false;
-    document.getElementById('tutor-send-btn').disabled = false;
     removeTutorLoading();
+    setTutorInputEnabled(true);
   }
+}
+
+function setTutorInputEnabled(enabled) {
+  document.getElementById('tutor-input').disabled = !enabled;
+  document.getElementById('tutor-send-btn').disabled = !enabled;
 }
 
 function renderTutorMessages() {
@@ -157,11 +172,28 @@ function renderTutorMessages() {
         .replace(/^### (.+)$/gm, '<strong style="color:#10b981;font-size:13px">$1</strong>')
         .replace(/^## (.+)$/gm, '<strong style="color:#10b981;font-size:14px">$1</strong>')
         .replace(/\n/g, '<br>');
+    } else if (msg.content === CHAPTER_INIT_MSG) {
+      continue; // hide the init message
     } else {
       div.textContent = msg.content;
     }
     container.appendChild(div);
   }
+
+  // Render chapter suggestion buttons
+  if (tutorChapters.length > 0) {
+    const sugDiv = document.createElement('div');
+    sugDiv.className = 'tutor-suggestions';
+    tutorChapters.forEach((ch, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'tutor-suggestion-btn';
+      btn.textContent = `Phần ${i + 1}: ${ch}`;
+      btn.addEventListener('click', () => sendTutorChapter(i, ch));
+      sugDiv.appendChild(btn);
+    });
+    container.appendChild(sugDiv);
+  }
+
   container.scrollTop = container.scrollHeight;
 }
 
@@ -180,11 +212,18 @@ function removeTutorLoading() {
   if (el) el.remove();
 }
 
-document.getElementById('tutor-send-btn').addEventListener('click', sendTutorMessage);
+document.getElementById('tutor-send-btn').addEventListener('click', () => {
+  const text = document.getElementById('tutor-input').value.trim();
+  if (text) { document.getElementById('tutor-input').value = ''; sendTutorMsg(text); }
+});
 document.getElementById('tutor-input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') sendTutorMessage();
+  if (e.key === 'Enter') {
+    const text = document.getElementById('tutor-input').value.trim();
+    if (text) { document.getElementById('tutor-input').value = ''; sendTutorMsg(text); }
+  }
 });
 
+// Load page
 async function loadPage() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.url || tab.url.startsWith('chrome://')) {
@@ -197,8 +236,9 @@ async function loadPage() {
   document.getElementById('content-wrapper').style.display = 'none';
   document.getElementById('summary-section').classList.remove('visible');
 
-  // Reset tutor state
+  // Reset state
   tutorMessages = [];
+  tutorChapters = [];
   tutorStarted = false;
   savedArticleId = null;
   document.getElementById('tutor-messages').innerHTML = '';
@@ -208,7 +248,6 @@ async function loadPage() {
 
   try {
     if (isYouTube) {
-      // YouTube: get transcript via backend API (Python youtube-transcript-api)
       const res = await fetch(`${API_BASE}/api/youtube/info`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -216,7 +255,6 @@ async function loadPage() {
       });
       if (!res.ok) throw new Error('Failed to fetch video info');
       const result = await res.json();
-
       const transcriptText = result.transcript || '';
 
       pageData = {
@@ -229,17 +267,12 @@ async function loadPage() {
         summary: null,
       };
 
-      // Show thumbnail
       const thumbEl = document.getElementById('thumbnail');
-      if (result.thumbnail) {
-        thumbEl.src = result.thumbnail;
-        thumbEl.style.display = 'block';
-      }
+      if (result.thumbnail) { thumbEl.src = result.thumbnail; thumbEl.style.display = 'block'; }
       document.getElementById('page-title').textContent = pageData.title;
       document.getElementById('page-meta').textContent = `🎬 ${result.author} · YouTube`;
       document.getElementById('content-label').textContent = 'Transcript';
 
-      // Render transcript
       const bodyEl = document.getElementById('content-body');
       bodyEl.innerHTML = '';
       if (transcriptText) {
@@ -257,34 +290,21 @@ async function loadPage() {
         bodyEl.innerHTML = '<p style="color:#888">Transcript not available for this video.</p>';
       }
     } else {
-      // Other pages: fetch via Jina Reader
       const res = await fetch(`https://r.jina.ai/${tab.url}`, {
         headers: { 'Accept': 'text/markdown', 'User-Agent': 'AI-News-Hacker-Dashboard' }
       });
       if (!res.ok) throw new Error(`Failed to fetch content (${res.status})`);
       const markdown = await res.text();
-
-      // Extract title
       const titleMatch = markdown.match(/^(?:Title:\s*(.+)|#\s+(.+))/m);
       const title = titleMatch?.[1] || titleMatch?.[2] || tab.title || 'Untitled';
 
-      pageData = {
-        url: tab.url,
-        title,
-        content: markdown,
-        thumbnail: null,
-        isYouTube: false,
-        summary: null,
-      };
+      pageData = { url: tab.url, title, content: markdown, thumbnail: null, isYouTube: false, summary: null };
 
       document.getElementById('thumbnail').style.display = 'none';
       document.getElementById('page-title').textContent = title;
       document.getElementById('page-meta').textContent = new URL(tab.url).hostname;
       document.getElementById('content-label').textContent = 'Content';
-
-      // Render markdown as plain text (simple)
-      const bodyEl = document.getElementById('content-body');
-      bodyEl.innerText = markdown;
+      document.getElementById('content-body').innerText = markdown;
     }
 
     document.getElementById('loading').style.display = 'none';
@@ -300,7 +320,7 @@ async function loadPage() {
     const saveBtn = document.getElementById('save-btn');
     saveBtn.disabled = false;
     saveBtn.textContent = '💾 Save';
-    saveBtn.className = 'btn-save';
+    saveBtn.className = 'btn-save-inline';
 
   } catch (err) {
     document.getElementById('loading').innerHTML = `<p style="color:#ef4444">Error: ${err.message}</p>`;
@@ -311,10 +331,8 @@ async function loadPage() {
 document.getElementById('summarize-btn').addEventListener('click', async () => {
   if (!pageData?.content) return;
   const btn = document.getElementById('summarize-btn');
-  const spinner = document.getElementById('sum-spinner');
   btn.disabled = true;
-  if (spinner) spinner.style.display = 'inline-block';
-  btn.innerHTML = '<span class="spinner" id="sum-spinner"></span> Summarizing...';
+  btn.innerHTML = '<span class="spinner"></span> Summarizing...';
 
   try {
     const res = await fetch(`${API_BASE}/api/youtube/summarize`, {
@@ -324,7 +342,6 @@ document.getElementById('summarize-btn').addEventListener('click', async () => {
     });
     if (!res.ok) throw new Error('Summarize failed');
     const data = await res.json();
-
     pageData.summary = data.summary;
 
     document.getElementById('summary-content').innerHTML = data.summary
@@ -340,7 +357,7 @@ document.getElementById('summarize-btn').addEventListener('click', async () => {
   }
 });
 
-// Save (content + summary)
+// Save
 document.getElementById('save-btn').addEventListener('click', async () => {
   if (!pageData) return;
   const apiKey = await getApiKey();
@@ -355,7 +372,6 @@ document.getElementById('save-btn').addEventListener('click', async () => {
   btn.textContent = 'Saving...';
 
   try {
-    // Save article
     const res = await fetch(`${API_BASE}/api/articles/add`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
@@ -368,7 +384,6 @@ document.getElementById('save-btn').addEventListener('click', async () => {
     const { article } = await res.json();
     savedArticleId = article.id;
 
-    // If we have a summary, save it too
     if (pageData.summary && article.id) {
       await fetch(`${API_BASE}/api/articles/${article.id}/save-summary`, {
         method: 'POST',
@@ -377,14 +392,14 @@ document.getElementById('save-btn').addEventListener('click', async () => {
       });
     }
 
-    btn.className = 'btn-saved';
+    btn.className = 'btn-save-inline saved';
     btn.textContent = '✓ Saved';
     showStatus('Saved to AI News!', 'success');
   } catch (err) {
     showStatus(`Error: ${err.message}`, 'error');
     btn.disabled = false;
     btn.textContent = '💾 Save';
-    btn.className = 'btn-save';
+    btn.className = 'btn-save-inline';
   }
 });
 
@@ -395,7 +410,6 @@ function showStatus(msg, type) {
   setTimeout(() => { el.className = 'status'; }, 5000);
 }
 
-// Listen for tab changes
 chrome.tabs.onActivated.addListener(() => loadPage());
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.url) loadPage();

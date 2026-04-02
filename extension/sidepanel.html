@@ -53,38 +53,34 @@
     }
     .key-hint { font-size: 10px; color: #10b981; cursor: pointer; padding: 2px 6px; }
 
-    /* Page Info */
+    /* Page Info — title + save inline */
     .page-info {
       padding: 12px 14px;
       border-bottom: 1px solid #1f1f1f;
       flex-shrink: 0;
     }
-    .page-info img {
-      width: 100%; border-radius: 6px; margin-bottom: 8px; display: none;
+    .page-title-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
     }
-    .page-info img.visible { display: block; }
-    .page-title { font-size: 14px; font-weight: 600; line-height: 1.4; margin-bottom: 2px; }
-    .page-meta { font-size: 11px; color: #888; }
-
-    /* Actions */
-    .actions {
-      display: flex; gap: 6px;
-      padding: 10px 14px;
-      border-bottom: 1px solid #1f1f1f;
+    .page-title { font-size: 14px; font-weight: 600; line-height: 1.4; flex: 1; }
+    .page-meta { font-size: 11px; color: #888; margin-top: 2px; }
+    .btn-save-inline {
       flex-shrink: 0;
+      padding: 4px 8px;
+      background: transparent;
+      color: #10b981;
+      border: 1px solid #1f1f1f;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
     }
-    .actions button {
-      flex: 1; padding: 8px; border: none; border-radius: 6px;
-      font-size: 12px; font-weight: 600; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 4px;
-    }
-    .btn-summarize { background: #10b981; color: #000; }
-    .btn-summarize:hover { background: #0fa874; }
-    .btn-summarize:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-save { background: transparent; color: #10b981; border: 1px solid #1f1f1f !important; }
-    .btn-save:hover { border-color: #10b981 !important; }
-    .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-saved { background: #10b981; color: #000; border: none !important; }
+    .btn-save-inline:hover { border-color: #10b981; }
+    .btn-save-inline:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-save-inline.saved { background: #10b981; color: #000; border-color: #10b981; }
 
     /* Tabs */
     .tab-bar {
@@ -114,6 +110,39 @@
     .tab-panel { display: none; flex: 1; flex-direction: column; overflow: hidden; min-height: 0; }
     .tab-panel.active { display: flex; }
 
+    /* Content tab */
+    .content-section { flex: 1; overflow-y: auto; padding: 10px 14px; }
+    .content-label {
+      font-size: 11px; color: #888; font-weight: 700; margin-bottom: 6px;
+      text-transform: uppercase; position: sticky; top: 0; background: #0a0a0a; padding: 4px 0;
+    }
+    .content-body { font-size: 12px; line-height: 1.7; color: #ccc; }
+    .content-body .ts { color: #10b981; font-size: 11px; font-weight: 600; margin-right: 4px; }
+
+    /* Summarize button inside content tab */
+    .content-summarize {
+      padding: 10px 14px;
+      border-bottom: 1px solid #1f1f1f;
+      flex-shrink: 0;
+    }
+    .btn-summarize {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      background: #10b981;
+      color: #000;
+    }
+    .btn-summarize:hover { background: #0fa874; }
+    .btn-summarize:disabled { opacity: 0.5; cursor: not-allowed; }
+
     /* Summary */
     .summary-section {
       padding: 10px 14px;
@@ -127,15 +156,6 @@
     .summary-label { font-size: 11px; color: #10b981; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; }
     .summary-content { font-size: 13px; line-height: 1.6; }
     .summary-content strong { color: #10b981; }
-
-    /* Content */
-    .content-section { flex: 1; overflow-y: auto; padding: 10px 14px; }
-    .content-label {
-      font-size: 11px; color: #888; font-weight: 700; margin-bottom: 6px;
-      text-transform: uppercase; position: sticky; top: 0; background: #0a0a0a; padding: 4px 0;
-    }
-    .content-body { font-size: 12px; line-height: 1.7; color: #ccc; }
-    .content-body .ts { color: #10b981; font-size: 11px; font-weight: 600; margin-right: 4px; }
 
     /* Deep Tutor Chat */
     .tutor-messages {
@@ -166,6 +186,32 @@
       border-bottom-left-radius: 2px;
     }
     .tutor-msg-assistant strong { color: #10b981; }
+
+    /* Tutor suggestion buttons */
+    .tutor-suggestions {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 4px 0;
+    }
+    .tutor-suggestion-btn {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid #1f1f1f;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-family: inherit;
+      font-size: 11px;
+      padding: 6px 8px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+    }
+    .tutor-suggestion-btn:hover {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
     .tutor-input {
       display: flex;
       gap: 6px;
@@ -230,20 +276,17 @@
   </div>
 
   <div id="content-wrapper" style="display:none">
-    <div class="page-info" style="display:flex;gap:10px;align-items:flex-start">
-      <img id="thumbnail" src="" alt="" style="width:80px;height:45px;object-fit:cover;border-radius:4px;flex-shrink:0;display:none" />
-      <div style="min-width:0">
-        <div class="page-title" id="page-title"></div>
-        <div class="page-meta" id="page-meta"></div>
+    <div class="page-info">
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <img id="thumbnail" src="" alt="" style="width:80px;height:45px;object-fit:cover;border-radius:4px;flex-shrink:0;display:none" />
+        <div style="min-width:0;flex:1">
+          <div class="page-title-row">
+            <div class="page-title" id="page-title"></div>
+            <button class="btn-save-inline" id="save-btn">💾 Save</button>
+          </div>
+          <div class="page-meta" id="page-meta"></div>
+        </div>
       </div>
-    </div>
-
-    <div class="actions">
-      <button class="btn-summarize" id="summarize-btn">
-        <span class="spinner" style="display:none" id="sum-spinner"></span>
-        ✦ Summarize
-      </button>
-      <button class="btn-save" id="save-btn">💾 Save</button>
     </div>
 
     <div id="status" class="status"></div>
@@ -256,6 +299,12 @@
 
     <!-- Content Tab -->
     <div class="tab-panel active" id="tab-content">
+      <div class="content-summarize">
+        <button class="btn-summarize" id="summarize-btn">
+          ✦ Summarize
+        </button>
+      </div>
+
       <div class="summary-section" id="summary-section">
         <div class="summary-label">BuHu Summary</div>
         <div class="summary-content" id="summary-content"></div>

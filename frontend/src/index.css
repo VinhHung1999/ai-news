@@ -638,6 +638,33 @@ html, body {
   font-size: 0.88rem;
 }
 
+/* === Tutor Suggestion Buttons === */
+.tutor-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem 0;
+}
+
+.tutor-suggestion-btn {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.82rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.tutor-suggestion-btn:hover {
+  border-color: var(--accent-brand);
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-brand);
+}
+
 .buhu-drawer-input {
   display: flex;
   gap: 0.5rem;

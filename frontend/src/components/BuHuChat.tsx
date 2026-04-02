@@ -16,6 +16,21 @@ interface BuHuChatProps {
   onClose: () => void;
 }
 
+// Parse numbered lines from AI response into chapter list
+function parseChapters(text: string): string[] {
+  const chapters: string[] = [];
+  const lines = text.split('\n');
+  for (const line of lines) {
+    const match = line.match(/^\s*\d+[\.\)]\s*(.+)/);
+    if (match) {
+      chapters.push(match[1].replace(/\*\*/g, '').trim());
+    }
+  }
+  return chapters;
+}
+
+const CHAPTER_INIT_MSG = 'List the main chapters/sections of this article as a short numbered list. Just the section titles, nothing else.';
+
 const BuHuChat = memo(({ articleId, onClose }: BuHuChatProps) => {
   const [mode, setMode] = useState<AiMode>('buhu');
 
@@ -28,6 +43,7 @@ const BuHuChat = memo(({ articleId, onClose }: BuHuChatProps) => {
   const [tutorMessages, setTutorMessages] = useState<ChatMessage[]>([]);
   const [tutorStarted, setTutorStarted] = useState(false);
   const [tutorLoading, setTutorLoading] = useState(false);
+  const [chapters, setChapters] = useState<string[]>([]);
 
   // Shared state
   const [chatInput, setChatInput] = useState('');
@@ -35,7 +51,6 @@ const BuHuChat = memo(({ articleId, onClose }: BuHuChatProps) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const messages = mode === 'buhu' ? buhuMessages : tutorMessages;
-  const setMessages = mode === 'buhu' ? setBuhuMessages : setTutorMessages;
   const isLoading = mode === 'buhu' ? chatLoading : (chatLoading || tutorLoading);
 
   useEffect(() => {
@@ -44,9 +59,9 @@ const BuHuChat = memo(({ articleId, onClose }: BuHuChatProps) => {
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [buhuMessages, tutorMessages, summary, mode]);
+  }, [buhuMessages, tutorMessages, summary, mode, chapters]);
 
-  // Auto-start Deep Tutor with overview when first switching to it
+  // Auto-start Deep Tutor when first switching to it
   useEffect(() => {
     if (mode === 'deep-tutor' && !tutorStarted && tutorMessages.length === 0) {
       startDeepTutor();
@@ -71,7 +86,7 @@ const BuHuChat = memo(({ articleId, onClose }: BuHuChatProps) => {
   const startDeepTutor = async () => {
     setTutorStarted(true);
     setTutorLoading(true);
-    const initMsg: ChatMessage = { role: 'user', content: 'Please provide a structured overview and outline of this article. Break it into key sections and highlight the main points I should pay attention to.' };
+    const initMsg: ChatMessage = { role: 'user', content: CHAPTER_INIT_MSG };
     setTutorMessages([initMsg]);
 
     try {
@@ -82,7 +97,9 @@ const BuHuChat = memo(({ articleId, onClose }: BuHuChatProps) => {
       });
       if (res.ok) {
         const data = await res.json();
-        setTutorMessages([initMsg, { role: 'assistant', content: data.reply }]);
+        const reply = data.reply;
+        setTutorMessages([initMsg, { role: 'assistant', content: reply }]);
+        setChapters(parseChapters(reply));
       }
     } catch (err) {
       console.error('Deep Tutor init error:', err);
@@ -91,23 +108,55 @@ const BuHuChat = memo(({ articleId, onClose }: BuHuChatProps) => {
     }
   };
 
-  const sendChat = async () => {
-    if (!chatInput.trim() || isLoading) return;
-    const userMsg: ChatMessage = { role: 'user', content: chatInput.trim() };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
-    setChatInput('');
+  const sendTutorMessage = async (text: string) => {
+    if (isLoading) return;
+    const userMsg: ChatMessage = { role: 'user', content: text };
+    const newMessages = [...tutorMessages, userMsg];
+    setTutorMessages(newMessages);
+    setChapters([]); // hide buttons while processing
     setChatLoading(true);
 
     try {
       const res = await apiFetch(`/api/articles/${articleId}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages, mode: mode === 'deep-tutor' ? 'deep-tutor' : undefined }),
+        body: JSON.stringify({ messages: newMessages, mode: 'deep-tutor' }),
       });
       if (res.ok) {
         const data = await res.json();
-        setMessages([...newMessages, { role: 'assistant', content: data.reply }]);
+        setTutorMessages([...newMessages, { role: 'assistant', content: data.reply }]);
+      }
+    } catch (err) {
+      console.error('Chat error:', err);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const sendChat = async () => {
+    if (!chatInput.trim() || isLoading) return;
+    const text = chatInput.trim();
+    setChatInput('');
+
+    if (mode === 'deep-tutor') {
+      await sendTutorMessage(text);
+      return;
+    }
+
+    const userMsg: ChatMessage = { role: 'user', content: text };
+    const newMessages = [...buhuMessages, userMsg];
+    setBuhuMessages(newMessages);
+    setChatLoading(true);
+
+    try {
+      const res = await apiFetch(`/api/articles/${articleId}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMessages }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBuhuMessages([...newMessages, { role: 'assistant', content: data.reply }]);
       }
     } catch (err) {
       console.error('Chat error:', err);
@@ -120,7 +169,6 @@ const BuHuChat = memo(({ articleId, onClose }: BuHuChatProps) => {
     <>
       {/* Drawer Header */}
       <div className="buhu-drawer-header">
-        {/* Mode Switcher */}
         <div className="ai-mode-switcher">
           <button
             className={`ai-mode-btn ${mode === 'buhu' ? 'ai-mode-btn-active' : ''}`}
@@ -179,6 +227,22 @@ const BuHuChat = memo(({ articleId, onClose }: BuHuChatProps) => {
             )}
           </div>
         ))}
+
+        {/* Chapter suggestion buttons */}
+        {mode === 'deep-tutor' && chapters.length > 0 && !isLoading && (
+          <div className="tutor-suggestions">
+            {chapters.map((ch, i) => (
+              <button
+                key={i}
+                className="tutor-suggestion-btn"
+                onClick={() => sendTutorMessage(`Bắt đầu phần ${i + 1}: ${ch}`)}
+              >
+                Phần {i + 1}: {ch}
+              </button>
+            ))}
+          </div>
+        )}
+
         {isLoading && (
           <div className="buhu-msg buhu-msg-assistant">
             <Loader2 size={14} className="spin" /> {mode === 'deep-tutor' ? 'Analyzing...' : 'Thinking...'}
