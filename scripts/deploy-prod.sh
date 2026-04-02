@@ -19,13 +19,16 @@ echo "  Build complete."
 echo "[2/4] Running deploy CLI..."
 deploy up ai-news-api --env prod
 
-# Step 3: Copy frontend bundle to deploy folder (deploy CLI misses this)
-echo "[3/4] Syncing frontend bundle to deploy folder..."
+# Step 3: Sync files that deploy CLI misses
+echo "[3/5] Syncing frontend bundle to deploy folder..."
 rm -rf "$DEPLOY_DIR/frontend/dist"
 cp -r "$PROJECT_DIR/backend/frontend/dist" "$DEPLOY_DIR/frontend/dist"
 
-# Step 4: Restart PM2 to pick up new frontend
-echo "[4/4] Restarting PM2..."
+echo "[4/5] Syncing backend scripts..."
+cp -r "$PROJECT_DIR/backend/scripts/" "$DEPLOY_DIR/scripts/"
+
+# Step 5: Restart PM2 to pick up changes
+echo "[5/5] Restarting PM2..."
 pm2 restart ai-news-api
 
 # Verify
