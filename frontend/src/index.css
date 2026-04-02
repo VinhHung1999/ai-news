@@ -575,6 +575,42 @@ html, body {
   height: 100%;
 }
 
+/* === AI Mode Switcher === */
+.ai-mode-switcher {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-default);
+  flex-shrink: 0;
+}
+
+.ai-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  background: none;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ai-mode-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.ai-mode-btn-active {
+  color: var(--accent-brand);
+  border-color: var(--accent-brand);
+  background: rgba(16, 185, 129, 0.08);
+}
+
 /* === BuHu Chat === */
 .buhu-chat-messages {
   flex: 1;

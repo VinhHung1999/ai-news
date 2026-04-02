@@ -5,7 +5,7 @@ import cors from 'cors';
 import multer from 'multer';
 import { getArticles, getTopPicks, getLatestCollectionDate, getArticleById, updateFullContent, updateAiSummary, toggleBookmark, getBookmarks, insertOneArticle, updateTitle, deleteArticle } from './db/database';
 import { runAllCollectors } from './services/collector-runner';
-import { summarizeArticle, chatAboutArticle } from './services/ai';
+import { summarizeArticle, chatAboutArticle, deepTutorChat } from './services/ai';
 import { fetchContentFromUrl, extractContentFromFile, isYouTubeUrl, fetchYouTubeInfo } from './services/content-fetcher';
 import type { ArticleRow, FormattedArticle } from './types';
 
@@ -220,13 +220,15 @@ app.post('/api/articles/:id/chat', async (req: Request, res: Response) => {
     if (!article) return res.status(404).json({ error: 'Article not found' });
 
     const content = article.full_content || article.description || '';
-    const { messages } = req.body as { messages: { role: 'user' | 'assistant'; content: string }[] };
+    const { messages, mode } = req.body as { messages: { role: 'user' | 'assistant'; content: string }[]; mode?: string };
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'messages array required' });
     }
 
-    const reply = await chatAboutArticle(article.title, content, messages);
+    const reply = mode === 'deep-tutor'
+      ? await deepTutorChat(article.title, content, messages)
+      : await chatAboutArticle(article.title, content, messages);
     res.json({ reply });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
