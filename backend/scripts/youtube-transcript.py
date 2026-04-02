@@ -9,10 +9,21 @@ lang = sys.argv[2] if len(sys.argv) > 2 else None
 
 api = YouTubeTranscriptApi()
 try:
-    if lang:
-        transcript = api.fetch(video_id, languages=[lang])
-    else:
-        transcript = api.fetch(video_id)
+    # Try fetching with specified language or default
+    try:
+        if lang:
+            transcript = api.fetch(video_id, languages=[lang])
+        else:
+            transcript = api.fetch(video_id)
+    except Exception:
+        # Fallback: list available transcripts and take the first one
+        transcript_list = api.list(video_id)
+        transcript = None
+        for t in transcript_list:
+            transcript = t.fetch()
+            break
+        if transcript is None:
+            raise Exception("No transcripts available for this video")
 
     result = []
     for snippet in transcript.snippets:
